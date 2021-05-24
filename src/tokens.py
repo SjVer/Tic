@@ -22,7 +22,7 @@ class TokenType(enum.Enum):
     NUMBER = 1
     IDENT = 2
     STRING = 3
-    # Keywords.
+    # Keywords. (101-200)
     LABEL = 101
     GOTO = 102
     PRINT = 103
@@ -36,7 +36,7 @@ class TokenType(enum.Enum):
     ENDWHILE = 111
     EXIT = 112
     SLEEP = 113
-    # Operators.
+    # Operators. (201-)
     EQ = 201  
     PLUS = 202
     MINUS = 203
