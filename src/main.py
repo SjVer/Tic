@@ -5,8 +5,9 @@ from emit import *
 from parse import *
 import sys, argparse, os, tempfile
 
-def main(file, output, compiler):
-    print("AttempLang Compiler")
+def main(file, output, compiler, verbose):
+    if verbose:
+        print("AttempLang Compiler")
     
     temp = tempfile.NamedTemporaryFile(suffix=".c", mode="w+t")
 
@@ -18,20 +19,22 @@ def main(file, output, compiler):
     emitter = Emitter(temp)
     parser = Parser(lexer, emitter)
 
-    print("Parsing file.")
+    if verbose:
+        print("Parsing file.")
     parser.program() # Start the parser.
     emitter.writeFile() # Write the output to file.
-    print("Parsing complete.")
-    
-    print("Compiling file.")
-    
+    if verbose:
+        print("Parsing complete.")
+
+        print("Compiling file.") 
     # make sure dirs exist
     if not os.path.exists(os.path.dirname(output)):
         os.mkdir(os.path.dirname(output))
-    
+    # compile
     os.system(f"{compiler} {temp.name} -o {output}")
     temp.close()
-    print("Compiling completed.")
+    if verbose:
+        print("Compiling completed.")
     
 if __name__ == '__main__':
     
@@ -39,8 +42,9 @@ if __name__ == '__main__':
         print("AttemptLang compiler version 1.0 by Sjoerd Vermeulen")
         sys.exit(0)
 
-    parser = argparse.ArgumentParser('attemptlang', description='AttemptLang compiler', usage='%(prog)s [-v] input\n -h/--help: show help message')
-    parser.add_argument('input', type=str, help='input script (program passed in as ".Al" file)')
+    parser = argparse.ArgumentParser('attemptcomp', description='AttemptLang compiler',
+                 usage='%(prog)s [-v] input [-o/--output file]\n -h/--help: show help message')
+    parser.add_argument('input', type=str, help='input script (program passed in as .Al file)')
     parser.add_argument('-o', '--output', dest='file', action='store', help='specify the output file')
     parser.add_argument('-c', '--compiler', dest='compiler', default='/usr/bin/gcc', action='store', help='specify the c compiler (gcc by default)')
     parser.add_argument('-v', '--verbose', action='store_true', default=0, help='verbose compiling')
@@ -48,6 +52,14 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
+    # check args n stuff
+    if not os.path.exists(args.input):
+        print(f"Error: File '{args.input}' does not exist")
+        sys.exit(1)
+    if not args.input.endswith('.Al'):
+        print(f"Error: File '{args.input}' is no .Al file")
+        sys.exit(1)
+        
     if args.file == None:
         outfile = os.path.join(os.getcwd(), "bin", os.path.splitext(os.path.basename(args.input))[0])
     else:
@@ -60,7 +72,7 @@ if __name__ == '__main__':
         print(f"Error: Compiler '{args.compiler}' not found")
         sys.exit(1)
     
-    main(args.input, outfile, args.compiler)
+    main(args.input, outfile, args.compiler, args.verbose)
     
     
     

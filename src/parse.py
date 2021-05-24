@@ -45,6 +45,7 @@ class Parser:
     # program ::= {statement}
     def program(self):
         self.emitter.headerLine("#include <stdio.h>")
+        self.emitter.headerLine("#include <unistd.h>")
         self.emitter.headerLine("int main(void){")
         
         # Since some newlines are required in our grammar, need to skip the excess.
@@ -169,6 +170,52 @@ class Parser:
             self.emitter.emitLine("}")
             self.match(TokenType.IDENT)
 
+        # "EXIT" (expression | number | ident)
+        elif self.checkToken(TokenType.EXIT):
+            self.nextToken()
+            
+            if self.checkToken(TokenType.NUMBER):
+                if not self.checkPeek(TokenType.NEWLINE) and not self.checkPeek(TokenType.EOF):
+                    # expression
+                    self.emitter.emit("return (")
+                    self.expression()
+                    self.emitter.emitLine(");")
+                
+                else:
+                    # Simple number, exit with it.
+                    self.emitter.emitLine("return " + self.curToken.text + ";")
+                    self.nextToken()
+                    
+            elif self.checkToken(TokenType.IDENT):
+                # ident
+                self.emitter.emitLine("return " + self.curToken.text + ";")
+                self.nextToken()
+            else:
+                self.abort("Expected numeric exit code, not '" + self.curToken.text + "'") 
+        
+        # "SLEEP" (expression | number | ident)
+        elif self.checkToken(TokenType.SLEEP):
+            self.nextToken()
+            
+            if self.checkToken(TokenType.NUMBER):
+                if not self.checkPeek(TokenType.NEWLINE) and not self.checkPeek(TokenType.EOF):
+                    # expression
+                    self.emitter.emit("sleep(")
+                    self.expression()
+                    self.emitter.emitLine(");")
+                
+                else:
+                    # Simple number, exit with it.
+                    self.emitter.emitLine("sleep(" + self.curToken.text + ");")
+                    self.nextToken()
+                    
+            elif self.checkToken(TokenType.IDENT):
+                # ident
+                self.emitter.emitLine("sleep(" + self.curToken.text + ");")
+                self.nextToken()
+            else:
+                self.abort("Expected number or expression, not '" + self.curToken.text + "'") 
+        
         # This is not a valid statement. Error!
         else:
             self.abort("Invalid statement at " + self.curToken.text + " (" + self.curToken.kind.name + ")")
