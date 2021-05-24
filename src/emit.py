@@ -2,13 +2,8 @@ import os
 
 # Emitter object keeps track of the generated code and outputs it.
 class Emitter:
-    def __init__(self, fullPath):
-        self.fullPath = fullPath
-        
-        # make sure dirs exist
-        if not os.path.exists(os.path.dirname(fullPath)):
-            print("DONT EXITST")
-            os.mkdir(os.path.join(os.getcwd(), os.path.dirname(fullPath)))
+    def __init__(self, tempfile):
+        self.tempfile = tempfile
         
         self.header = ""
         self.code = ""
@@ -23,5 +18,7 @@ class Emitter:
         self.header += code + '\n'
 
     def writeFile(self):
-        with open(self.fullPath, 'w') as outputFile:
-            outputFile.write(self.header + self.code)
+        self.tempfile.write(self.header + self.code)
+        self.tempfile.seek(0)
+        #with open(self.tempfile, 'w') as outputFile:
+        #    outputFile.write(self.header + self.code)
