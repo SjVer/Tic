@@ -15,7 +15,6 @@ class Parser:
 		
 		self.curToken = None
 		self.peekToken = None
-		self.curLine = 1
 		self.nextToken()
 		self.nextToken()    # Call this twice to initialize current and peek.
 
@@ -46,7 +45,7 @@ class Parser:
 		self.peekToken = self.lexer.getToken()
 		# No need to worry about passing the EOF, lexer handles that.
 
-		# check for includes
+		# check for includes and add to headers if needed
 		if self.curToken != None and self.curToken.kind.value.include != None:
 			if not self.curToken.kind.value.include in self.includes:
 				self.includes.add(self.curToken.kind.value.include)
@@ -369,7 +368,6 @@ class Parser:
 	
 	# nl ::= '\n'+
 	def nl(self):
-		self.curLine += 1
 		# Require at least one newline.
 		self.match(TokenType.NEWLINE)
 		# But we will allow extra newlines too, of course.
