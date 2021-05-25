@@ -45,8 +45,8 @@ class Parser:
 		# No need to worry about passing the EOF, lexer handles that.
 
 	def abort(self, message):
-		sys.exit(f"Error. {message} (at line {self.curLine}")
-	
+		sys.exit(f"Error: {message}")
+		
 
 	# Production rules.
 		
@@ -71,7 +71,7 @@ class Parser:
 		# Check that each label referenced in a GOTO is declared.
 		for label in self.labelsGotoed:
 			if label not in self.labelsDeclared:
-				self.abort("Attempting to GoTo to undeclared label: " + label)
+				self.abort("GoTo: Attempting to go to undeclared label: " + label)
 	
 	# One of the following statements...
 	def statement(self):
@@ -147,7 +147,7 @@ class Parser:
 
 			# Make sure this label doesn't already exist.
 			if self.curToken.text in self.labelsDeclared:
-				self.abort("Label already exists: " + self.curToken.text)
+				self.abort("Label: Label already exists: " + self.curToken.text)
 			self.labelsDeclared.add(self.curToken.text)
 
 			self.emitter.emitLine(self.curToken.text + ":")
@@ -214,7 +214,7 @@ class Parser:
 				self.emitter.emitLine("return " + self.curToken.text + ";")
 				self.nextToken()
 			else:
-				self.abort("Expected numeric exit code, not '" + self.curToken.text + "'")
+				self.abort(f"Exit: Expected numeric exit code, not '{self.curToken.text}' ({self.curToken.kind.name})")
 		
 		# "FOR" (ident) (expression | number | ident) (expression | number | ident) (expression | number | ident) "DO" block "ENDFOR"
 		elif self.checkToken(TokenType.FOR):
@@ -247,7 +247,7 @@ class Parser:
 					self.emitter.emit(self.curToken.text)
 
 				else:
-					self.abort("Expected number or expression, not '" + self.curToken.text + "'")
+					self.abort(f"For: Expected number or expression, not not '{self.curToken.text}' ({self.curToken.kind.name})")
 
 				if i < 2:
 					self.nextToken()
@@ -292,7 +292,7 @@ class Parser:
 				self.emitter.emitLine("sleep(" + self.curToken.text + ");")
 				self.nextToken()
 			else:
-				self.abort("Expected number or expression, not '" + self.curToken.text + "'") 
+				self.abort(f"Sleep: Expected number or expression, not '{self.curToken.text}' ({self.curToken.kind.name})") 
 		
 		# This is not a valid statement. Error!
 		else:
