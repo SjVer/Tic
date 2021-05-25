@@ -22,7 +22,7 @@ class Types(enum.Enum):
 
 # token values
 class TokenTypeItem:
-    def __init__(self, ttype: Types, keyword: str = None, func = None):
+    def __init__(self, ttype: Types, keyword: str = None, func = None, include = None):
         self.type = ttype
         if self.type == Types.KEYWORD:
             if keyword == None:
@@ -36,6 +36,7 @@ class TokenTypeItem:
                 raise TypeError(f"TokenType of type {self.type.name} only requires an id and type")
             self.keyword = None
             self.execute = None
+        self.include = include
 
 # TokenType is our enum for all the types of tokens.
 class TokenType(enum.Enum):
@@ -48,9 +49,9 @@ class TokenType(enum.Enum):
     # Keywords. (101-200)
     LABEL   = TokenTypeItem(Types.KEYWORD, 'Label')
     GOTO    = TokenTypeItem(Types.KEYWORD, 'GoTo')
-    PRINT   = TokenTypeItem(Types.KEYWORD, 'Print')
-    PRINTLN = TokenTypeItem(Types.KEYWORD, 'PrintLine')
-    INPUT   = TokenTypeItem(Types.KEYWORD, 'Input')
+    PRINT   = TokenTypeItem(Types.KEYWORD, 'Print',     include='stdio')
+    PRINTLN = TokenTypeItem(Types.KEYWORD, 'PrintLine', include='stdio')
+    INPUT   = TokenTypeItem(Types.KEYWORD, 'Input',     include='stdio')
     ASSIGN  = TokenTypeItem(Types.KEYWORD, 'Assign')
     IF      = TokenTypeItem(Types.KEYWORD, 'If')
     THEN    = TokenTypeItem(Types.KEYWORD, 'Then')
@@ -62,7 +63,7 @@ class TokenType(enum.Enum):
     DO      = TokenTypeItem(Types.KEYWORD, 'Do')
     ENDFOR  = TokenTypeItem(Types.KEYWORD, 'EndFor')
     EXIT    = TokenTypeItem(Types.KEYWORD, 'Exit')
-    SLEEP   = TokenTypeItem(Types.KEYWORD, 'Sleep')
+    SLEEP   = TokenTypeItem(Types.KEYWORD, 'Sleep',     include='unistd')
     # Operators. (201-)
     EQ      = TokenTypeItem(Types.OPERATOR)
     PLUS    = TokenTypeItem(Types.OPERATOR)

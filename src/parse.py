@@ -7,6 +7,8 @@ class Parser:
 		self.lexer = lexer
 		self.emitter = emitter
 		
+		self.includes = set()
+
 		self.symbols = set()        # Variables declared so far.
 		self.labelsDeclared = set() # Labels declared so far.
 		self.labelsGotoed = set()   # Labels goto'ed so far.
@@ -44,6 +46,12 @@ class Parser:
 		self.peekToken = self.lexer.getToken()
 		# No need to worry about passing the EOF, lexer handles that.
 
+		# check for includes
+		if self.curToken != None and self.curToken.kind.value.include != None:
+			if not self.curToken.kind.value.include in self.includes:
+				self.includes.add(self.curToken.kind.value.include)
+				self.emitter.headerLine(f"#include <{self.curToken.kind.value.include}.h>")
+
 	def abort(self, message):
 		sys.exit(f"Error: {message}")
 		
@@ -52,8 +60,8 @@ class Parser:
 		
 	# program ::= {statement}
 	def program(self):
-		self.emitter.headerLine("#include <stdio.h>")
-		self.emitter.headerLine("#include <unistd.h>")
+		# self.emitter.headerLine("#include <stdio.h>")
+		# self.emitter.headerLine("#include <unistd.h>")
 		self.emitter.headerLine("int main(void){")
 		
 		# Since some newlines are required in our grammar, need to skip the excess.

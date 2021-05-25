@@ -16,6 +16,7 @@ class Lexer:
             self.curChar = '\0'  # EOF
         else:
             self.curChar = self.source[self.curPos]
+        
 
 			
     # Return the lookahead character.
