@@ -39,7 +39,9 @@ def main(file, output, compiler, verbose):
 if __name__ == '__main__':
     
     if '--version' in sys.argv:
-        with open('version.txt', 'r') as f:
+
+        path = os.path.join(os.path.realpath(__file__), 'version.txt')
+        with open(path, 'r') as f:
             version = f.read()
         print(f"AttemptLang compiler version {version} by Sjoerd Vermeulen")
         sys.exit(0)
