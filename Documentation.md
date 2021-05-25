@@ -1,6 +1,7 @@
 # AttemptLang Documentation
 All currently implemented features are documented here.
-
+<br/>
+<br/>
 ## Syntaxes
 **Label** <br/>
 Defines a label to jump to using `GoTo`
@@ -120,3 +121,17 @@ Sleep <variable>
 <br/>
 
 
+## Supported operators
+All supported operators behave as normal <br/>
+
+| =  |
+| +  |
+| -  |
+| *  |
+| /  |
+| == |
+| != |
+| >  |
+| >= |
+| <  |
+| <= |
