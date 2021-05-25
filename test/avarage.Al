@@ -1,19 +1,19 @@
 # Compute average of given values.
 
-LET a = 0
-WHILE a < 1 REPEAT
-    PRINT "Enter number of scores: "
-    INPUT a
-ENDWHILE
+Let a = 0
+While a < 1 Repeat
+    Print "Enter number of scores: "
+    Input a
+Endwhile
 
-LET b = 0
-LET s = 0
-PRINT "Enter one value at a time: "
-WHILE b < a REPEAT
-    INPUT c
-    LET s = s + c
-    LET b = b + 1
-ENDWHILE
+Let b = 0
+Let s = 0
+Print "Enter one value at a time: "
+While b < a Repeat
+    Input c
+    Let s = s + c
+    Let b = b + 1
+Endwhile
 
-PRINT "Average: "
-PRINT s / a
+Print "Average: "
+Print s / a

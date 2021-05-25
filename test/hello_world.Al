@@ -1,1 +1,1 @@
-PRINT "Hello World!"
+PrintLine "Hello World!"

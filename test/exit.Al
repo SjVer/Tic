@@ -1,10 +1,10 @@
-PRINT "In five seconds this program will exit with exit code 1..."
+Print "In five seconds this program will exit with exit code 1..."
 
-LET count = 5
-WHILE count > 0 REPEAT
-    PRINT count
-    LET count = count - 1
-    SLEEP 1
-ENDWHILE
+Let count = 5
+While count > 0 Repeat
+    Print count
+    Let count = count - 1
+    Sleep 1
+Endwhile
 
-EXIT 1
+Exit 1
