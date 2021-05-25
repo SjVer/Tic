@@ -1,0 +1,10 @@
+Package: attemptcomp
+Version: 1.0
+Maintainer: Sjoerd Vermeulen <sjoerd@marsenaar.com>
+Section: interpreters
+Architecture: all
+Priority: optional
+Depends: python3
+Recommends: gcc
+Description: Compiler for AttemptLang
+ This is the compiler for AttemptLang. See https://github.com/SjVer/AttemptLang for more information.
