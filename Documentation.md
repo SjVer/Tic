@@ -138,7 +138,6 @@ All supported operators behave as normal <br/>
 | <  |
 | <= |
 <br/>
-<br/>
 
 ## miscellaneous Tokens
 | | | |
