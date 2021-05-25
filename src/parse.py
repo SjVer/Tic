@@ -159,8 +159,8 @@ class Parser:
 			self.emitter.emitLine("goto " + self.curToken.text + ";")
 			self.match(TokenType.IDENT)
 
-		# "LET" ident = expression
-		elif self.checkToken(TokenType.LET):
+		# "ASSIGN" ident = expression
+		elif self.checkToken(TokenType.ASSIGN):
 			self.nextToken()
 
 			#  Check if ident exists in symbol table. If not, declare it.

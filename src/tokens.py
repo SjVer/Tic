@@ -51,7 +51,7 @@ class TokenType(enum.Enum):
     PRINT   = TokenTypeItem(Types.KEYWORD, 'Print')
     PRINTLN = TokenTypeItem(Types.KEYWORD, 'PrintLine')
     INPUT   = TokenTypeItem(Types.KEYWORD, 'Input')
-    LET     = TokenTypeItem(Types.KEYWORD, 'Let')
+    ASSIGN  = TokenTypeItem(Types.KEYWORD, 'Assign')
     IF      = TokenTypeItem(Types.KEYWORD, 'If')
     THEN    = TokenTypeItem(Types.KEYWORD, 'Then')
     ENDIF   = TokenTypeItem(Types.KEYWORD, 'EndIf')
