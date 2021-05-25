@@ -40,7 +40,7 @@ if __name__ == '__main__':
     
     if '--version' in sys.argv:
 
-        path = os.path.join(os.path.realpath(__file__), 'version.txt')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'version.txt')
         with open(path, 'r') as f:
             version = f.read()
         print(f"AttemptLang compiler version {version} by Sjoerd Vermeulen")
