@@ -39,7 +39,9 @@ def main(file, output, compiler, verbose):
 if __name__ == '__main__':
     
     if '--version' in sys.argv:
-        print("AttemptLang compiler version 1.0 by Sjoerd Vermeulen")
+        with open('version.txt', 'r') as f:
+            version = f.read()
+        print(f"AttemptLang compiler version {version} by Sjoerd Vermeulen")
         sys.exit(0)
 
     parser = argparse.ArgumentParser('attemptcomp', description='AttemptLang compiler',
