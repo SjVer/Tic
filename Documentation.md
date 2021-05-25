@@ -124,6 +124,7 @@ Sleep <variable>
 ## Supported operators
 All supported operators behave as normal <br/>
 
+|----|
 | =  |
 | +  |
 | -  |
