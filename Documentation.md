@@ -125,6 +125,7 @@ Sleep <variable>
 All supported operators behave as normal <br/>
 
 | <!-- -->    |
+|--- |
 | =  |
 | +  |
 | -  |
@@ -136,3 +137,15 @@ All supported operators behave as normal <br/>
 | >= |
 | <  |
 | <= |
+<br/>
+<br/>
+
+## miscellaneous Tokens
+| | | |
+|-|-|-|
+| EOF | End of file |
+| NEWLINE | Newline |
+| NUMBER | Number |
+| IDENT | Variable |
+| STRING | String |
+| COMMA | Comma |
