@@ -5,7 +5,7 @@ An attempt at making a simple programming language
 ### How It Works
 AttemptLang is a compiled language. The compiler itself is written completely in Python and really only converts the AttemptLang code to c code, which in turn gets compiled by a c compiler.
 
-The compiler consists out of 5 "modules":
+The compiler consists out of 4 "modules":
 - The main script
 - The lexer
 - The parser
