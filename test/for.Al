@@ -1,9 +1,9 @@
-Print "for loop for x:\n"
+PrintLine "for loop for x:"
 For x, 1, 10, 2 Do
 
-Print "\nx is now "
-Print x
-Print "\nx will be "
-Print x + 2
+Print "x is now "
+PrintLine x
+Print "x will be "
+PrintLine x + 2
 
 EndFor
