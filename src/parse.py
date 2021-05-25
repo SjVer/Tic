@@ -13,6 +13,7 @@ class Parser:
 		
 		self.curToken = None
 		self.peekToken = None
+		self.curLine = 1
 		self.nextToken()
 		self.nextToken()    # Call this twice to initialize current and peek.
 
@@ -44,9 +45,9 @@ class Parser:
 		# No need to worry about passing the EOF, lexer handles that.
 
 	def abort(self, message):
-		sys.exit("Error. " + message)
+		sys.exit(f"Error. {message} (at line {self.curLine}")
 	
-	
+
 	# Production rules.
 		
 	# program ::= {statement}
@@ -87,7 +88,7 @@ class Parser:
 
 			else:
 				# Expect an expression and print the result as a float.
-				self.emitter.emit("printf(\"%" + "d\", (")
+				self.emitter.emit("printf(\"%" + ".2f\", (float)(")
 				self.expression()
 				self.emitter.emitLine("));")
 
@@ -102,7 +103,7 @@ class Parser:
 
 			else:
 				# Expect an expression and print the result as a float.
-				self.emitter.emit("printf(\"%" + "d\\n\", (")
+				self.emitter.emit("printf(\"%" + ".2f\\n\", (float)(")
 				self.expression()
 				self.emitter.emitLine("));")
 				
@@ -360,7 +361,7 @@ class Parser:
 	
 	# nl ::= '\n'+
 	def nl(self):
-		
+		self.curLine += 1
 		# Require at least one newline.
 		self.match(TokenType.NEWLINE)
 		# But we will allow extra newlines too, of course.
