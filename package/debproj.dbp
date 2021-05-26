@@ -1,7 +1,7 @@
 [DEBREATE-0.7.13]
 <<CTRL>>
 Package: attemptcomp
-Version: 1.0
+Version: 1.1
 Maintainer: Sjoerd Vermeulen <sjoerd@marsenaar.com>
 Section: interpreters
 Architecture: all
@@ -14,12 +14,12 @@ Description: Compiler for AttemptLang
 <</CTRL>>
 <<FILES>>
 1
-/home/sjoerd/AttemptLang/src/attemptcomp* -> attemptcomp -> /usr/bin
-/home/sjoerd/AttemptLang/src/emit.py -> emit.py -> /usr/bin
-/home/sjoerd/AttemptLang/src/lex.py -> lex.py -> /usr/bin
-/home/sjoerd/AttemptLang/src/parse.py -> parse.py -> /usr/bin
-/home/sjoerd/AttemptLang/src/tokens.py -> tokens.py -> /usr/bin
-/home/sjoerd/AttemptLang/src/version.txt -> version.txt -> /usr/bin
+/home/sjoerd/AttemptLang/compiler/attemptcomp* -> attemptcomp -> /usr/bin
+/home/sjoerd/AttemptLang/compiler/emit.py -> emit.py -> /usr/bin
+/home/sjoerd/AttemptLang/compiler/funcs.py -> funcs.py -> /usr/bin
+/home/sjoerd/AttemptLang/compiler/lex.py -> lex.py -> /usr/bin
+/home/sjoerd/AttemptLang/compiler/parse.py -> parse.py -> /usr/bin
+/home/sjoerd/AttemptLang/compiler/tokens.py -> tokens.py -> /usr/bin
 <</FILES>>
 <<SCRIPTS>>
 <<PREINST>>
@@ -42,7 +42,7 @@ Description: Compiler for AttemptLang
 <<COPYRIGHT>>
 The MIT-X (MIT/X11) License
 
-Copyright © <year(s)> <copyright holder(s)> [<email>]
+Copyright © 2021 Sjoerd Vermeulen sjoerd@marsenaar.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

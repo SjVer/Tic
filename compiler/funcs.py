@@ -161,22 +161,34 @@ def funcFOR(host, TokenType):
 		if host.checkToken(TokenType.NUMBER):
 			if not host.checkPeek(TokenType.COMMA):
 				# expression
+				# print("expression: ", host.curToken.text, ' and ', host.peekToken.text)
 				host.expression()
+				# print('expression done. currtoken: ', host.curToken.text)
 			else:
 				# number
+				# print("number: ", host.curToken.text, ' and ', host.peekToken.text)
 				host.emitter.emit(host.curToken.text)
 				host.nextToken()
 
 		elif host.checkToken(TokenType.IDENT):
 			# ident
-			host.emitter.emit(host.curToken.text)
-			host.nextToken()
+			if not host.checkPeek(TokenType.COMMA):
+				# expression
+				# print("expression: ", host.curToken.text, ' and ', host.peekToken.text)
+				host.expression()
+				# print('expression done. currtoken: ', host.curToken.text)
+			else:
+				# ident
+				# print("ident: ", host.curToken.text, ' and ', host.peekToken.text)
+				host.emitter.emit(host.curToken.text)
+				host.nextToken()
 
 		else:
 			host.abort(f"For: Expected number or expression, not not '{host.curToken.text}' ({host.curToken.kind.name})")
 
-		if i < 2:			
+		if i < 2:
 			# print(host.curToken.text)
+			
 			host.match(TokenType.COMMA, False)
 			if i == 0:
 				host.emitter.emit(';' + forvar + '<=')

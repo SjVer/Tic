@@ -31,7 +31,8 @@ class Parser:
     # Try to match current token. If not, error. Advances the current token.
     def match(self, kind, next = True):
         if not self.checkToken(kind):
-            self.abort("Expected " + kind.name + ", got " + self.curToken.kind.name)
+            self.abort("Expected " + kind.name + ", got " + 
+            	self.curToken.kind.name + " ('" + self.curToken.text + "')")
         if next:
             self.nextToken()
 

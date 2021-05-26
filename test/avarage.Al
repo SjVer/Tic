@@ -8,7 +8,7 @@ EndWhile
 
 Assign s = 0
 Print "Enter one value at a time: "
-For b, 0, 5 - 1, 1 Do
+For b, 0, a - 1, 1 Do
     Input c
     Assign s = s + c
 EndFor
