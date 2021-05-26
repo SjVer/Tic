@@ -1,5 +1,7 @@
 import enum, sys
 
+from funcs import *
+
 # Token contains the original text and the type of token.
 class Token:
     def __init__(self, tokenText, tokenKind):
@@ -47,23 +49,23 @@ class TokenType(enum.Enum):
     STRING  = TokenTypeItem(Types.SYMBOL)
     COMMA   = TokenTypeItem(Types.SYMBOL)
     # Keywords. (101-200)
-    LABEL   = TokenTypeItem(Types.KEYWORD, 'Label')
-    GOTO    = TokenTypeItem(Types.KEYWORD, 'GoTo')
-    PRINT   = TokenTypeItem(Types.KEYWORD, 'Print',     include='stdio')
-    PRINTLN = TokenTypeItem(Types.KEYWORD, 'PrintLine', include='stdio')
-    INPUT   = TokenTypeItem(Types.KEYWORD, 'Input',     include='stdio')
-    ASSIGN  = TokenTypeItem(Types.KEYWORD, 'Assign')
-    IF      = TokenTypeItem(Types.KEYWORD, 'If')
+    LABEL   = TokenTypeItem(Types.KEYWORD, 'Label',     func=funcLABEL)
+    GOTO    = TokenTypeItem(Types.KEYWORD, 'GoTo',      func=funcGOTO)
+    PRINT   = TokenTypeItem(Types.KEYWORD, 'Print',     func=funcPRINT,     include='stdio')
+    PRINTLN = TokenTypeItem(Types.KEYWORD, 'PrintLine', func=funcPRINTLN,   include='stdio')
+    INPUT   = TokenTypeItem(Types.KEYWORD, 'Input',     func=funcINPUT,     include='stdio')
+    ASSIGN  = TokenTypeItem(Types.KEYWORD, 'Assign',    func=funcASSIGN)
+    IF      = TokenTypeItem(Types.KEYWORD, 'If',        func=funcIF)
     THEN    = TokenTypeItem(Types.KEYWORD, 'Then')
     ENDIF   = TokenTypeItem(Types.KEYWORD, 'EndIf')
-    WHILE   = TokenTypeItem(Types.KEYWORD, 'While')
+    WHILE   = TokenTypeItem(Types.KEYWORD, 'While',     func=funcWHILE)
     REPEAT  = TokenTypeItem(Types.KEYWORD, 'Repeat')
     ENDWHILE= TokenTypeItem(Types.KEYWORD, 'EndWhile')
-    FOR     = TokenTypeItem(Types.KEYWORD, 'For')
+    FOR     = TokenTypeItem(Types.KEYWORD, 'For',       func=funcFOR)
     DO      = TokenTypeItem(Types.KEYWORD, 'Do')
     ENDFOR  = TokenTypeItem(Types.KEYWORD, 'EndFor')
-    EXIT    = TokenTypeItem(Types.KEYWORD, 'Exit')
-    SLEEP   = TokenTypeItem(Types.KEYWORD, 'Sleep',     include='unistd')
+    EXIT    = TokenTypeItem(Types.KEYWORD, 'Exit',      func=funcEXIT)
+    SLEEP   = TokenTypeItem(Types.KEYWORD, 'Sleep',     func=funcSLEEP,     include='unistd')
     # Operators. (201-)
     EQ      = TokenTypeItem(Types.OPERATOR)
     PLUS    = TokenTypeItem(Types.OPERATOR)

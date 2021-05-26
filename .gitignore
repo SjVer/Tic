@@ -1,5 +1,5 @@
 **/__pycache__/
 **/bin/
-parse_new.py
+parse_old.py
 *.deb
 *.zip

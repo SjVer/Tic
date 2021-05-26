@@ -6,14 +6,12 @@ While a < 1 Repeat
     Input a
 EndWhile
 
-Assign b = 0
 Assign s = 0
 Print "Enter one value at a time: "
-While b < a Repeat
+For b, 0, 5 - 1, 1 Do
     Input c
     Assign s = s + c
-    Assign b = b + 1
-EndWhile
+EndFor
 
 Print "Average: "
 Print s / a

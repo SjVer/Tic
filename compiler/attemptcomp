@@ -17,7 +17,7 @@ def main(file, output, compiler, verbose):
 
     # Initialize the lexer, emitter, and parser.
     lexer = Lexer(input)
-    emitter = Emitter(temp)
+    emitter = Emitter(temp, verbose)
     parser = Parser(lexer, emitter)
 
     if verbose:
@@ -40,11 +40,7 @@ def main(file, output, compiler, verbose):
 if __name__ == '__main__':
     
     if '--version' in sys.argv:
-
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'version.txt')
-        with open(path, 'r') as f:
-            version = f.read()
-        print(f"AttemptLang compiler version {version} by Sjoerd Vermeulen")
+        print(f"AttemptLang compiler version {VERSION} by Sjoerd Vermeulen")
         sys.exit(0)
 
     parser = argparse.ArgumentParser('attemptcomp', description='AttemptLang compiler',

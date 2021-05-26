@@ -2,18 +2,22 @@ import os
 
 # Emitter object keeps track of the generated code and outputs it.
 class Emitter:
-    def __init__(self, tempfile):
+    def __init__(self, tempfile, verbose):
         self.tempfile = tempfile
         
+        self.verbose = verbose
+
         self.header = ""
         self.code = ""
 
     def emit(self, code):
-        # print("EMIT: " + code)
+        if self.verbose:
+            print("EMIT: " + code)
         self.code += code
 
     def emitLine(self, code):
-        # print("EMIT: " + code)
+        if self.verbose:
+            print("EMIT: " + code)
         self.code += code + '\n'
 
     def headerLine(self, code):

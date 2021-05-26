@@ -88,7 +88,7 @@ See `While`
 **For** <br/>
 Repeats a block of code using a variable that starts at a given value, ends at a given value and increments by a given value. (As of right now the end value must be larger than the start value.)
 ```
-For <variable> <start value> <end value> <increment> Do
+For <variable>, <start value>, <end value>, <increment> Do
 <code to execute>
 EndFor
 ```
