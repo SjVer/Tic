@@ -24,8 +24,8 @@ All that's left then is for the main script to compile that c script using e.g. 
 
 
 ### Documentation
-The full documentation is [here](Documentation.md)
-
+The full documentation is [here](Documentation.md) <br/>
+Code examples can be found in /test
 
 ### Credits
 [Sjoerd Vermeulen](https://github.com/SjVer) (me) <br/>

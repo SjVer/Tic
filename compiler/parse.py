@@ -49,8 +49,7 @@ class Parser:
                 self.emitter.headerLine(f"#include <{self.curToken.kind.value.include}.h>")
 
     def abort(self, message):
-        sys.exit("Error: " + message)
-    
+        sys.exit("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/AttemptLang or message sjoerd@marsenaar.com")
     
     # Production rules.
         
