@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+VERSION=1.0.1
 
 from lex import *
 from emit import *
