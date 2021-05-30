@@ -316,8 +316,13 @@ class BuildMainWindow:
 		return		
 
 	def run_in_terminal(self, *args):
-		command = 'echo test'
+		ed = self.notebook.get_children()[self.notebook.get_current_page()].parent_editor
+		binFileHandle, binFileName = tempfile.mkstemp()
+		compile_command ="/usr/bin/attemptcomp " + ed._filepath + " -o " + binFileName
+		run_command =  binFileName
+		command = f"{compile_command} && {run_command}"
 		os.system("x-terminal-emulator -e 'bash -c \""+command+"; echo; echo script finished. press enter to close the terminal...; read\"'")
+		os.remove(binFileName)
 
 
 class BuildEditor:
