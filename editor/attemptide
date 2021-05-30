@@ -36,13 +36,32 @@ class MainWindow(BuildMainWindow):
 		self.window.show_all()
 		gtk.main()
 
-	def new_editor(self, load=False):
+	def new_editor(self, focus=True):
 		ed = Editor(self.notebook)
-		if load:
-			ed.loadfile()
 		self.editors.append(ed)
-		self.notebook.append_page(ed.view, gtk.Label(label=ed.filename))
+		self.notebook.append_page(ed.scrollwindow, gtk.Label(label=ed.filename))
+		self.notebook.set_tab_detachable(ed.scrollwindow, True)
+		if focus:
+			pass
+		self.notebook.show_all()
+		return ed
 
+	def new_editor_load(self, *args):
+		ed = self.new_editor()
+		ed.loadfile()
+
+	def save_current_page(self, *args):
+		ed = self.notebook.get_children()[self.notebook.get_current_page()].parent_editor 
+		if ed._filepath is None:
+			self.save_current_page_as()
+		else:
+			ed.savefile(False)
+
+	def save_current_page_as(self, *args):
+		self.notebook.get_children()[self.notebook.get_current_page()].parent_editor.savefile(True)
+
+	def main_quit(self, *args):
+		gtk.main_quit()
 
 if __name__ == "__main__":
 	MainWindow()
