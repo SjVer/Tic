@@ -1,0 +1,69 @@
+[DEBREATE-0.7.13]
+<<CTRL>>
+Package: attemptide
+Version: 1.0
+Maintainer: sjoerd vermeulen <sjoerd@marsenaar.com>
+Architecture: all
+Priority: optional
+Depends: python3, python3-gi, python3-pip, attemptcomp, libssl-dev, python3-dev, default-jdk, gir1.2-gtksource-3.0
+Description: IDE for AttemtLang
+ , gir1.2-gtk-3.0, gobject-introspection
+ see https://github.com/SjVer/AttemptLang for more info
+
+<</CTRL>>
+<<FILES>>
+1
+/home/sjoerd/AttemptLang/editor/attemptide* -> attemptide -> /usr/bin
+/home/sjoerd/AttemptLang/editor/editor_class.py -> editor_class.py -> /usr/bin
+/home/sjoerd/AttemptLang/editor/windows.py -> windows.py -> /usr/bin
+<</FILES>>
+<<SCRIPTS>>
+<<PREINST>>
+0
+<</PREINST>>
+<<POSTINST>>
+0
+<</POSTINST>>
+<<PRERM>>
+0
+<</PRERM>>
+<<POSTRM>>
+0
+<</POSTRM>>
+<</SCRIPTS>>
+<<CHANGELOG>>
+<<DEST>>DEFAULT<</DEST>>
+
+<</CHANGELOG>>
+<<COPYRIGHT>>
+The MIT-X (MIT/X11) License
+
+Copyright © 2021 sjoerd vermeulen sjoerd@marsenaar.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+<</COPYRIGHT>>
+<<MENU>>
+0
+<</MENU>>
+<<BUILD>>
+1
+1
+1
+strip
+<</BUILD>>
