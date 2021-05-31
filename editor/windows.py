@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk as gtk
 from gi.repository import Gdk as gdk
-from gi.repository import Vte as vte
+# from gi.repository import Vte as vte
 # from gi.repository import Glib as glib
 # import glib
 from gi.repository import GObject
@@ -20,7 +20,6 @@ def update_label_for_child(self, child, text):
 	# update specific label
 	self.set_tab_label_text(child, text)
 
-
 class BuildMainWindow:
 	def __init__(self):
 		print('Building MainWindow')
@@ -33,12 +32,12 @@ class BuildMainWindow:
 
 		# output view
 		self.output_view = gtk.TextView()
-		self.box.pack_end(self.output_view, False, True, 0)
+		# self.box.pack_end(self.output_view, False, True, 0)
 		self.output_view.set_size_request(10, 150)
 		self.output_view.set_editable(False)
 		self.output_view.set_left_margin(10)
 		self.output_view.modify_font(pango.FontDescription("monospace 11"))
-		self.output_view.hide()
+		# self.output_view.hide()
 
 		self.notebook = gtk.Notebook()
 		setattr(self.notebook, "update_label_for_child", update_label_for_child)
@@ -56,7 +55,9 @@ class BuildMainWindow:
 		# accels
 		self.accelgr = gtk.AccelGroup()
 		self.window.add_accel_group(self.accelgr)
-		
+		key, mod = gtk.accelerator_parse('Escape')
+		self.accelgr.connect(key, mod, gtk.AccelFlags.VISIBLE, self.hide_terminal)
+
 		# menuitems
 
 		# file
@@ -82,7 +83,6 @@ class BuildMainWindow:
 		self.help_item.connect('activate', self.on_help_clicked)
 		self.menubar.append(self.help_item)
 		
-
 	def FileSubMenu(self):
 		menu = gtk.Menu()
 
@@ -133,14 +133,14 @@ class BuildMainWindow:
 
 		# undo
 		self.edit_menu_item_undo = gtk.MenuItem(label='Undo')
-		self.edit_menu_item_undo.connect('activate', print)
+		self.edit_menu_item_undo.connect('activate', self.undo_current_editor)
 		menu.append(self.edit_menu_item_undo)
 		key, mod = gtk.accelerator_parse("<Control>Z")
 		self.edit_menu_item_undo.add_accelerator("activate", self.accelgr, key, mod, gtk.AccelFlags.VISIBLE)
 
 		# redo
-		self.edit_menu_item_redo = gtk.MenuItem(label='Undo')
-		self.edit_menu_item_redo.connect('activate', print)
+		self.edit_menu_item_redo = gtk.MenuItem(label='Redo')
+		self.edit_menu_item_redo.connect('activate', self.redo_current_editor)
 		menu.append(self.edit_menu_item_redo)
 		key, mod = gtk.accelerator_parse("<Control>Y")
 		self.edit_menu_item_redo.add_accelerator("activate", self.accelgr, key, mod, gtk.AccelFlags.VISIBLE)
@@ -169,7 +169,7 @@ class BuildMainWindow:
 		self.edit_menu_item_paste.add_accelerator("activate", self.accelgr, key, mod, gtk.AccelFlags.VISIBLE)
 
 		# select all
-		self.edit_menu_item_select_all = gtk.MenuItem(label='Select All')
+		self.edit_menu_item_select_all = gtk.MenuItem(label='Select all')
 		self.edit_menu_item_select_all.connect('activate', print)
 		menu.append(self.edit_menu_item_select_all)
 		key, mod = gtk.accelerator_parse("<Control>A")
@@ -211,6 +211,26 @@ class BuildMainWindow:
 		key, mod = gtk.accelerator_parse("<Control><Shift>B")
 		self.run_menu_item_run_in_terminal.add_accelerator("activate", self.accelgr, key, mod, gtk.AccelFlags.VISIBLE)
 
+		#self.run_menu_item_run_in_terminal_input = gtk.MenuItem(label='Run with input')
+		# self.run_menu_item_run_in_terminal_input.connect('activate', self.run_in_terminal_input)
+		#menu.append(self.run_menu_item_run_in_terminal_input)
+
+		menu.append(gtk.SeparatorMenuItem())
+
+		#self.run_menu_item_compile = gtk.MenuItem(label='Compile only')
+		# self.run_menu_item_compile.connect('activate', self.compile)
+		#menu.append(self.run_menu_item_compile)
+		#key, mod = gtk.accelerator_parse("<Control><Shift>C")
+		#self.run_menu_item_compile.add_accelerator('activate', self.accelgr, key, mod, gtk.AccelFlags.VISIBLE)
+
+		#menu.append(gtk.SeparatorMenuItem())
+
+		self.run_menu_item_hide = gtk.MenuItem(label='Hide terminal')
+		self.run_menu_item_hide.connect('activate', self.hide_terminal)
+		menu.append(self.run_menu_item_hide)
+		key, mod = gtk.accelerator_parse("Escape")
+		self.run_menu_item_hide.add_accelerator("activate", self.accelgr, key, mod, gtk.AccelFlags.VISIBLE)
+
 		menu.show_all()
 		return menu
 
@@ -245,6 +265,8 @@ class BuildMainWindow:
 		return self.proc.poll() is None
 
 	def run(self, *args):
+		self.show_terminal(True)
+
 		ed = self.notebook.get_children()[self.notebook.get_current_page()].parent_editor
 		self.output_view.get_buffer().set_text('')
 
@@ -279,29 +301,26 @@ class BuildMainWindow:
 
 		binFileHandle, binFileName = tempfile.mkstemp()
 
-		compile_command =["/usr/bin/attemptcomp", "-v", ed._filepath, "-o", binFileName]
-		# self.comp_out = ""
-		# self.proc = Popen(compile_command, stdout=PIPE, shell=True)
-		# GObject.timeout_add(100, self.update_comp_output)
+		compile_command =["/usr/bin/attemptcomp", ed._filepath, "-o", binFileName]
 		p = Popen(compile_command, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=-1)
 		output, error = p.communicate()
 		output = output.decode("utf-8")
+		error = error.decode("utf-8")
 
 		print('done', p.returncode)
-
 		if p.returncode != 0:
-			self.failed_compile(p.returncode, output)
+			self.failed_compile(p.returncode, error)
 			return
 
 		os.close(binFileHandle)
 		p = Popen(binFileName, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=1)
+		p.stdin.write(str.encode('1'))
 
 		output, error = p.communicate()
 		output = output.decode("utf-8")
 
 		self.output_view.get_buffer().set_text(output)
 		os.remove(binFileName)
-
 
 	def failed_compile(self, exit_code, text):
 		def destroy(dlg, *args):
@@ -324,6 +343,30 @@ class BuildMainWindow:
 		os.system("x-terminal-emulator -e 'bash -c \""+command+"; echo; echo script finished. press enter to close the terminal...; read\"'")
 		os.remove(binFileName)
 
+	def show_terminal(self, show):
+		if show:
+			print('showing terminal')
+			try:
+				self.box.remove(self.notebook)
+				self.box.pack_end(self.output_view, False, True, 0)
+				# self.output_view.show()
+				self.output_view.show_now()
+				self.box.pack_end(self.notebook, True, True, 0)
+			except:
+				print('cannot show terminal')
+		else:
+			print('hiding terminal')
+			try:
+				self.box.remove(self.output_view)
+			except:
+				print('cannot hide terminal')
+	def hide_terminal(self, *args):
+		self.show_terminal(False)
+
+	def undo_current_editor(self, *args):
+		self.get_current_editor().buffer.undo()
+	def redo_current_editor(self, *args):
+		self.get_current_editor().buffer.redo()
 
 class BuildEditor:
 	def __init__(self):

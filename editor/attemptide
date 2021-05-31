@@ -29,6 +29,7 @@ class MainWindow(BuildMainWindow):
 		super().__init__()
 		self.editors = []
 
+		self.first = True
 		self.new_editor()
 
 		# self.window.
@@ -47,6 +48,9 @@ class MainWindow(BuildMainWindow):
 		return ed
 
 	def new_editor_load(self, *args):
+		if self.first:
+			self.notebook.remove_page(0)
+			self.first = False
 		ed = self.new_editor()
 		ed.loadfile()
 
@@ -59,6 +63,12 @@ class MainWindow(BuildMainWindow):
 
 	def save_current_page_as(self, *args):
 		self.notebook.get_children()[self.notebook.get_current_page()].parent_editor.savefile(True)
+
+	def get_current_editor(self):
+		if len(self.notebook.get_children()) > 0:
+			return self.notebook.get_children()[self.notebook.get_current_page()].parent_editor
+		else:
+			return None
 
 	def main_quit(self, *args):
 		gtk.main_quit()

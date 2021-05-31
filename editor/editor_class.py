@@ -26,8 +26,12 @@ class Editor(BuildEditor):
 		# close this page
 		self.parent_notebook.remove_page(self.parent_notebook.get_current_page())	
 
-	def set_text(self, text):
+	def set_text(self, text, no_undo = True):
+		if no_undo:
+			self.buffer.begin_not_undoable_action()
 		self.buffer.set_text(text)
+		if no_undo:
+			self.buffer.end_not_undoable_action()
 		self.update_label()
 
 	def update_label(self):
