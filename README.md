@@ -27,6 +27,10 @@ All that's left then is for the main script to compile that c script using e.g. 
 The full documentation is [here](Documentation.md) <br/>
 Code examples can be found in /test
 
+### AttemptIDE
+The IDE for AttemptLang, AttemptIDE can be downloaded from the releases page. <br/>
+See `Editor.md` for more information.
+
 ### Credits
 [Sjoerd Vermeulen](https://github.com/SjVer) (me) <br/>
 [This tutorial](http://web.eecs.utk.edu/~azh/blog/teenytinycompiler1.html) (really reccomend it!)
