@@ -2,12 +2,13 @@ import enum, sys
 from tokens import *
 
 class Lexer:
-    def __init__(self, input):
+    def __init__(self, input, verbose):
         self.source = input + '\n' 	# Source code to lex as a string. Append a newline to simplify lexing/parsing the last token/statement.
         self.curChar = ''   		# Current character in the string.
         self.curPos = -1    		# Current position in the string.
         self.nextChar()
-	
+
+        self.verbose = verbose
 	
     # Process the next character.
     def nextChar(self):
@@ -16,34 +17,28 @@ class Lexer:
             self.curChar = '\0'  # EOF
         else:
             self.curChar = self.source[self.curPos]
-        
-
-			
+        		
     # Return the lookahead character.
     def peek(self):
         if self.curPos + 1 >= len(self.source):
             return '\0'
         return self.source[self.curPos + 1]
 
-	
     # Invalid token found, print error message and exit.
     def abort(self, message):
         sys.exit("Lexing error. " + message)
 
-	
     # Skip whitespace except newlines, which we will use to indicate the end of a statement.
     def skipWhitespace(self):
         while self.curChar == ' ' or self.curChar == '\t' or self.curChar == '\r':
             self.nextChar()
 
-	
     # Skip comments in the code.
     def skipComment(self):
         if self.curChar == '#':
             while self.curChar != '\n':
                 self.nextChar()
-                
-    
+                 
     # Return the next token.
     def getToken(self):
         self.skipWhitespace()
@@ -153,7 +148,10 @@ class Lexer:
             tokText = self.source[startPos : self.curPos + 1] # Get the substring.
             keyword = Token.checkIfKeyword(tokText)
             if keyword == None: # Identifier
-                token = Token(tokText, TokenType.IDENT)
+                if tokText == 'true' or tokText == 'false':
+                    token = Token(tokText, TokenType.BOOL)
+                else:
+                    token = Token(tokText, TokenType.IDENT)
             else:   # Keyword
                 token = Token(tokText, keyword)
                 
@@ -162,9 +160,6 @@ class Lexer:
             self.abort("Unknown token: '" + self.curChar + "'")
 			
         self.nextChar()
+        if self.verbose:
+            print('LEX: Token ' + token.kind.name)
         return token
-
-		
-
-	
-	

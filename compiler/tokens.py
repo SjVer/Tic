@@ -11,7 +11,6 @@ class Token:
     @staticmethod
     def checkIfKeyword(tokenText):
         for kind in TokenType:
-            # Relies on all keyword enum values being 1XX.
             if kind.value.keyword == tokenText and kind.value.type == Types.KEYWORD:
                 return kind
         return None
@@ -22,9 +21,14 @@ class Types(enum.Enum):
     KEYWORD = 1
     OPERATOR = 2
 
+class DataTypes(enum.Enum):
+    STRING = 'String'
+    NUMBER = 'Number'
+    BOOL   = 'Bool'
+
 # token values
 class TokenTypeItem:
-    def __init__(self, ttype: Types, keyword: str = None, func = None, include = None):
+    def __init__(self, ttype: Types, keyword: str = None, func = None, include: list = None):
         self.type = ttype
         if self.type == Types.KEYWORD:
             if keyword == None:
@@ -34,9 +38,9 @@ class TokenTypeItem:
             self.keyword = keyword
             self.execute = func
         else:
-            if keyword != None or func != None:
-                raise TypeError(f"TokenType of type {self.type.name} only requires an id and type")
-            self.keyword = None
+            # if keyword != None or func != None:
+                # raise TypeError(f"TokenType of type {self.type.name} only requires an id and type")
+            self.keyword = keyword
             self.execute = None
         self.include = include
 
@@ -46,15 +50,17 @@ class TokenType(enum.Enum):
     NEWLINE = TokenTypeItem(Types.SYMBOL)
     NUMBER  = TokenTypeItem(Types.SYMBOL)
     IDENT   = TokenTypeItem(Types.SYMBOL)
-    STRING  = TokenTypeItem(Types.SYMBOL)
+    STRING  = TokenTypeItem(Types.SYMBOL,   include=['string'])
     COMMA   = TokenTypeItem(Types.SYMBOL)
-    # Keywords. (101-200)
+    BOOL    = TokenTypeItem(Types.SYMBOL,   include=['stdbool'])
+    # Keywords
     LABEL   = TokenTypeItem(Types.KEYWORD, 'Label',     func=funcLABEL)
     GOTO    = TokenTypeItem(Types.KEYWORD, 'GoTo',      func=funcGOTO)
-    PRINT   = TokenTypeItem(Types.KEYWORD, 'Print',     func=funcPRINT,     include='stdio')
-    PRINTLN = TokenTypeItem(Types.KEYWORD, 'PrintLine', func=funcPRINTLN,   include='stdio')
-    INPUT   = TokenTypeItem(Types.KEYWORD, 'Input',     func=funcINPUT,     include='stdio')
-    ASSIGN  = TokenTypeItem(Types.KEYWORD, 'Assign',    func=funcASSIGN)
+    PRINT   = TokenTypeItem(Types.KEYWORD, 'Print',     func=funcPRINT,     include=['stdio', 'math'])
+    PRINTLN = TokenTypeItem(Types.KEYWORD, 'PrintLine', func=funcPRINTLN,   include=['stdio', 'math'])
+    INPUT   = TokenTypeItem(Types.KEYWORD, 'Input',     func=funcINPUT,     include=['stdio', 'string', 'ctype'])
+    DECLARE = TokenTypeItem(Types.KEYWORD, 'Declare',   func=funcDECLARE)
+    SET     = TokenTypeItem(Types.KEYWORD, 'Set',       func=funcSET)
     IF      = TokenTypeItem(Types.KEYWORD, 'If',        func=funcIF)
     THEN    = TokenTypeItem(Types.KEYWORD, 'Then')
     ENDIF   = TokenTypeItem(Types.KEYWORD, 'EndIf')
@@ -65,8 +71,14 @@ class TokenType(enum.Enum):
     DO      = TokenTypeItem(Types.KEYWORD, 'Do')
     ENDFOR  = TokenTypeItem(Types.KEYWORD, 'EndFor')
     EXIT    = TokenTypeItem(Types.KEYWORD, 'Exit',      func=funcEXIT)
-    SLEEP   = TokenTypeItem(Types.KEYWORD, 'Sleep',     func=funcSLEEP,     include='unistd')
-    # Operators. (201-)
+    SLEEP   = TokenTypeItem(Types.KEYWORD, 'Sleep',     func=funcSLEEP,     include=['unistd'])
+    FUNC    = TokenTypeItem(Types.KEYWORD, 'Function',  func=funcFUNCTION)
+    TAKES   = TokenTypeItem(Types.KEYWORD, 'Takes')
+    DOES    = TokenTypeItem(Types.KEYWORD, 'Does')
+    ENDFUNC = TokenTypeItem(Types.KEYWORD, 'EndFunction')
+    CALL    = TokenTypeItem(Types.KEYWORD, 'Call',      func=funcCALL)
+    WITH    = TokenTypeItem(Types.KEYWORD, 'With')
+    # Operators
     EQ      = TokenTypeItem(Types.OPERATOR)
     PLUS    = TokenTypeItem(Types.OPERATOR)
     MINUS   = TokenTypeItem(Types.OPERATOR)

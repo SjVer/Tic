@@ -16,9 +16,9 @@ def main(file, output, compiler, verbose):
         input = inputFile.read()
 
     # Initialize the lexer, emitter, and parser.
-    lexer = Lexer(input)
+    lexer = Lexer(input, False)#, verbose)
     emitter = Emitter(temp, verbose)
-    parser = Parser(lexer, emitter)
+    parser = Parser(lexer, emitter, verbose)
 
     if verbose:
         print("Parsing file.")
@@ -32,9 +32,14 @@ def main(file, output, compiler, verbose):
     if not os.path.exists(os.path.dirname(output)):
         os.mkdir(os.path.dirname(output))
     # compile
-    os.system(f"{compiler} {temp.name} -o {output}")
+    returnval = os.system(f"{compiler} {temp.name} -o {output} -lm")
     temp.close()
-    if verbose:
+
+    returnval = int(bin(returnval).replace("0b", "").rjust(16, '0')[:8], 2)
+    if returnval != 0:
+        print('Compilation failed with exit code ', returnval)
+
+    elif verbose:
         print("Compiling completed.")
     
 if __name__ == '__main__':

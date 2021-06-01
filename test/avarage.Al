@@ -1,17 +1,16 @@
 # Compute average of given values.
 
-Assign a = 0
-While a < 1 Repeat
-    Print "Enter number of scores: "
-    Input a
-EndWhile
+Declare a = 0
+Print "Enter number of scores: "
+Input a
 
-Assign s = 0
-Print "Enter one value at a time: "
+Declare s = 0
+PrintLine "Enter one value at a time: "
 For b, 0, a - 1, 1 Do
+    Declare c = 1
     Input c
-    Assign s = s + c
+    Set s = s + c
 EndFor
 
 Print "Average: "
-Print s / a
+PrintLine s / a

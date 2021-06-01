@@ -1,19 +1,22 @@
 import sys
 from lex import *
+from copy import deepcopy
 
 # import funcs
 # from funcs import *
 
 # Parser object keeps track of current token and checks if the code matches the grammar.
 class Parser:
-    def __init__(self, lexer, emitter):
+    def __init__(self, lexer, emitter, verbose):
         self.lexer = lexer
         self.emitter = emitter
+        self.verbose = verbose
 
-        self.includes = set()
-        self.symbols = set()        # Variables declared so far.
+        self.includes = set() # includes needed
+        self.variablesDeclared = {} # Variables declared so far. key is name and value is type
         self.labelsDeclared = set() # Labels declared so far.
         self.labelsGotoed = set()   # Labels goto'ed so far.
+        self.functionsDeclared = {} # key is name and value is amount of args
 
         self.curToken = None
         self.peekToken = None
@@ -22,10 +25,12 @@ class Parser:
 
     # Return true if the current token matches.
     def checkToken(self, kind):
+        #
         return kind == self.curToken.kind
 
     # Return true if the next token matches.
     def checkPeek(self, kind):
+        #
         return kind == self.peekToken.kind
 
     # Try to match current token. If not, error. Advances the current token.
@@ -37,25 +42,41 @@ class Parser:
             self.nextToken()
 
     # Advances the current token.
-    def nextToken(self):
+    def nextToken(self, templexer = None):
         self.curToken = self.peekToken
-        self.peekToken = self.lexer.getToken()
-        # No need to worry about passing the EOF, lexer handles that.
+        if templexer == None:
+            self.peekToken = self.lexer.getToken()
+            # No need to worry about passing the EOF, lexer handles that.
 
-        # check for includes and add to headers if needed
-        if self.curToken != None and self.curToken.kind.value.include != None:
-            if not self.curToken.kind.value.include in self.includes:
-                self.includes.add(self.curToken.kind.value.include)
-                self.emitter.headerLine(f"#include <{self.curToken.kind.value.include}.h>")
+            # check for includes and add to headers if needed
+            if self.curToken != None and self.curToken.kind.value.include != None:
+                for include in self.curToken.kind.value.include:
+                    if not include in self.includes:
+                        self.includes.add(include)
+                        self.emitter.includeLine(f"#include <{include}.h>")
+        else:
+            self.peekToken = templexer.getToken()
 
     def abort(self, message):
+        # raise ValueError("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/AttemptLang or message sjoerd@marsenaar.com")
         sys.exit("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/AttemptLang or message sjoerd@marsenaar.com")
-    
-    # Production rules.
-        
+        # print('test')
+
+    # gets current expression as string
+    def get_current_expression(self):
+        oldcur, oldpeek = self.curToken, self.peekToken
+        express = ''
+        templexer = deepcopy(self.lexer)
+        while not self.checkToken(TokenType.NEWLINE) and not self.checkToken(TokenType.EOF) and not self.checkToken(TokenType.COMMA):
+            express += self.curToken.text
+            self.nextToken(templexer)
+        self.curToken, self.peekToken = oldcur, oldpeek
+        return express
+
+    # parsing
+
     # program ::= {statement}
     def program(self):
-        self.emitter.headerLine("int main(void){")
         
         # Since some newlines are required in our grammar, need to skip the excess.
         while self.checkToken(TokenType.NEWLINE):
@@ -64,10 +85,6 @@ class Parser:
         # Parse all the statements in the program.
         while not self.checkToken(TokenType.EOF):
             self.statement()
-
-        # Wrap things up.
-        self.emitter.emitLine("return 0;")
-        self.emitter.emitLine("}")
 
         # Check that each label referenced in a GOTO is declared.
         for label in self.labelsGotoed:
@@ -80,13 +97,15 @@ class Parser:
         
         for kind in TokenType:
             if self.checkToken(kind):
+                if kind.value.execute == None:
+                    self.abort("Invalid statement at '" + self.curToken.text + "' (" + self.curToken.kind.name + ")")
                 # found token
                 kind.value.execute(self, TokenType)
                 break
 			
         # This is not a valid statement. Error!
         else:
-            self.abort("Invalid statement at " + self.curToken.text + " (" + self.curToken.kind.name + ")")
+            self.abort("Invalid statement at '" + self.curToken.text + "' (" + self.curToken.kind.name + ")")
             
         # Newline.
         self.nl()
@@ -106,44 +125,60 @@ class Parser:
             self.expression()
     
     # expression ::= term {( "-" | "+" ) term}
-    def expression(self):
-        self.term()
+    def expression(self, in_func=False):
+        self.term(in_func)
         # Can have 0 or more +/- and expressions.
         while self.checkToken(TokenType.PLUS) or self.checkToken(TokenType.MINUS):
-            self.emitter.emit(self.curToken.text)
+            if in_func:
+                self.emitter.function(self.curToken.text)
+            else:
+                self.emitter.emit(self.curToken.text)
             self.nextToken()
-            self.term()
-
+            self.term(in_func)
 
     # term ::= unary {( "/" | "*" ) unary}
-    def term(self):
-        self.unary()
+    def term(self, in_func=False):
+        self.unary(in_func)
         # Can have 0 or more *// and expressions.
         while self.checkToken(TokenType.ASTERISK) or self.checkToken(TokenType.SLASH):
-            self.emitter.emit(self.curToken.text)
-            self.nextToken()
-            self.unary()
+            if in_func:
+                self.emitter.function(self.curToken.text)
+            else:
+                self.emitter.emit(self.curToken.text)
 
+            self.nextToken()
+            self.unary(in_func)
 
     # unary ::= ["+" | "-"] primary
-    def unary(self):
+    def unary(self, in_func=False):
         # Optional unary +/-
         if self.checkToken(TokenType.PLUS) or self.checkToken(TokenType.MINUS):
-            self.emitter.emit(self.curToken.text)
+            if in_func:
+                self.emitter.function(self.curToken.text)
+            else:
+                self.emitter.emit(self.curToken.text)
             self.nextToken()        
-        self.primary()
+        self.primary(in_func)
     
     # primary ::= number | ident
-    def primary(self):
+    def primary(self, in_func=False):
         if self.checkToken(TokenType.NUMBER): 
-            self.emitter.emit(self.curToken.text)
+            if in_func:
+                self.emitter.function(self.curToken.text)
+            else:
+                self.emitter.emit(self.curToken.text)
             self.nextToken()
         elif self.checkToken(TokenType.IDENT):
             # Ensure the variable already exists.
-            if self.curToken.text not in self.symbols:
-                self.abort("Referencing variable before assignment: " + self.curToken.text)
+            if self.curToken.text not in self.variablesDeclared:
+                self.abort("Referencing variable before declaration: " + self.curToken.text
+                    + (f"\nDeclared variables: {', '.join([k for k in self.variablesDeclared.keys()])}" if self.verbose else ''))
 
-            self.emitter.emit(self.curToken.text)
+            if in_func:
+                self.emitter.function(self.curToken.text)
+            else:
+                self.emitter.emit(self.curToken.text)
+
             self.nextToken()
         else:
             # Error!
@@ -166,3 +201,4 @@ class Parser:
             self.checkToken(TokenType.LTEQ) or
             self.checkToken(TokenType.EQEQ) or
             self.checkToken(TokenType.NOTEQ) )
+        

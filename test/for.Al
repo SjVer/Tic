@@ -1,11 +1,14 @@
-PrintLine "for loop for x:"
+PrintLine "for loop for x from 1 to 10 with steps of 2:"
 
 # equivalent to e.g. python's "for x in (1, 10, 2):"
 For x, 1, 10, 2 Do
 
-Print "x is now "
-PrintLine x
-Print "x will be "
-PrintLine x + 2
+	Print "x is now "
+	PrintLine x
+
+	If x < 9 Then
+		Print "x will be "
+		PrintLine x + 2
+	EndIf
 
 EndFor
