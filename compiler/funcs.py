@@ -422,6 +422,8 @@ def funcFUNCTION(host, TokenType):
 			elif host.checkToken(TokenType.COMMA):
 				host.emitter.function(',')
 				host.nextToken()
+
+			## BUSY WITH PASSING VARS TO FUNCTION N STUFF
 	else:
 		host.emitter.function('void) {\n')
 
@@ -452,7 +454,6 @@ def funcCALL(host, TokenType):
 		host.abort("Call: Calling function before setment: " + host.curToken.text)
 
 	# instead of calling the function generate and call a wrapper to make sure that arguments work
-	host.emitter.emit(host.curToken.text + ('1' if host.curToken.text + '_wrapper' in host.emitter.wrappers else '') + '_wrapper(')
 
 	argsamount = host.functionsDeclared[host.curToken.text]
 	funcname = host.curToken.text
@@ -461,6 +462,7 @@ def funcCALL(host, TokenType):
 	# first generate the call of the wrapper but store information for the wrapper in the process
 	# if func needs args check for them
 	if argsamount > 0:
+		host.emitter.emit(host.curToken.text + ('1' if host.curToken.text + '_wrapper' in host.emitter.wrappers else '') + '_wrapper(')
 		localargs = {}
 
 		if not host.checkToken(TokenType.WITH):
@@ -539,6 +541,10 @@ def funcCALL(host, TokenType):
 		wrappercode += ');}'
 
 		host.emitter.wrapperFunc(wrappercode)
+
+	else:
+		# no args
+		host.emitter.emitLine(funcname + '();')
 
 	if not host.checkToken(TokenType.NEWLINE):
 		host.abort(f"Call: Function '{funcname}' takes {argsamount} arguments")

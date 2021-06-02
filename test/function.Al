@@ -1,10 +1,8 @@
 # A simple function
 
-Function MyFunc Takes x Does
-	Print "parameter: "
-	PrintLine x
+#Function MyFunc Takes x Does
+Function MyFunc Does
+	PrintLine "MyFunc called!"
 EndFunction
 
-Declare a = 1+1
-
-Call MyFunc With a
+Call MyFunc
