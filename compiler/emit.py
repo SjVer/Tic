@@ -55,8 +55,9 @@ class Emitter:
         self.tempfile.write(text)
         self.tempfile.seek(0)
         # print("\nCode:\n\n" + text + "\n\n\n")
-        print('\n\ngenerated code:\n--------------------------\n')
-        os.system('clang-format ' + self.tempfile.name)        
-        print('\n\n--------------------------\n\n')
+        if self.verbose:
+            print('\n\ngenerated code:\n--------------------------\n')
+            os.system('clang-format ' + self.tempfile.name)        
+            print('\n\n--------------------------\n\n')
         #with open(self.tempfile, 'w') as outputFile:
         #    outputFile.write(self.header + self.code)

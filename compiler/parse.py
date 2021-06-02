@@ -112,17 +112,47 @@ class Parser:
     
     # comparison ::= expression (("==" | "!=" | ">" | ">=" | "<" | "<=") expression)+
     def comparison(self):
-        self.expression()
+
+        # if the comparison is just a bool use it
+        if self.curToken.text in self.variablesDeclared and self.variablesDeclared [self.curToken.text] == TokenType.BOOL:
+            self.emitter.emit(self.curToken.text)
+            self.nextToken()
+            if self.checkToken(TokenType.THEN):
+                return
+        else:
+            self.expression()
         # Must be at least one comparison operator and another expression.
         if self.isComparisonOperator():
             self.emitter.emit(self.curToken.text)
             self.nextToken()
             self.expression()
-        # Can have 0 or more comparison operator and expressions.
-        while self.isComparisonOperator():
-            self.emitter.emit(self.curToken.text)
+
+        # allow "OR" and "AND"
+        if self.checkToken(TokenType.OR):
+            self.emitter.emit(')||(')
             self.nextToken()
             self.expression()
+        elif self.checkToken(TokenType.AND):
+            self.emitter.emit(')&&(')
+            self.nextToken()
+            self.expression()
+
+        # Can have 0 or more comparison operator and expressions.
+        while True:
+            if self.isComparisonOperator():
+                self.emitter.emit(self.curToken.text)
+                self.nextToken()
+                self.expression()
+            elif self.checkToken(TokenType.OR):
+                self.emitter.emit(')||(')
+                self.nextToken()
+                self.expression()
+            elif self.checkToken(TokenType.AND):
+                self.emitter.emit(')&&(')
+                self.nextToken()
+                self.expression()
+            else:
+                break
     
     # expression ::= term {( "-" | "+" ) term}
     def expression(self, in_func=False):
@@ -162,7 +192,7 @@ class Parser:
     
     # primary ::= number | ident
     def primary(self, in_func=False):
-        if self.checkToken(TokenType.NUMBER): 
+        if self.checkToken(TokenType.NUMBER) or self.checkToken(TokenType.BOOL): 
             if in_func:
                 self.emitter.function(self.curToken.text)
             else:

@@ -62,6 +62,8 @@ class TokenType(enum.Enum):
     DECLARE = TokenTypeItem(Types.KEYWORD, 'Declare',   func=funcDECLARE)
     SET     = TokenTypeItem(Types.KEYWORD, 'Set',       func=funcSET)
     IF      = TokenTypeItem(Types.KEYWORD, 'If',        func=funcIF)
+    OR      = TokenTypeItem(Types.KEYWORD, 'Or')
+    AND     = TokenTypeItem(Types.KEYWORD, 'And')
     THEN    = TokenTypeItem(Types.KEYWORD, 'Then')
     ENDIF   = TokenTypeItem(Types.KEYWORD, 'EndIf')
     WHILE   = TokenTypeItem(Types.KEYWORD, 'While',     func=funcWHILE)

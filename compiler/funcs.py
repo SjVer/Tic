@@ -80,15 +80,15 @@ def funcPRINTLN(host, TokenType):
 	# 	host.expression()
 	# 	host.emitter.emitLine("));")
 
-# "IF" (comparison) "THEN" block "ENDIF"		
+# "IF" (comparison ["OR" comparison]) "THEN" block "ENDIF"		
 def funcIF(host, TokenType):
 	host.nextToken()
-	host.emitter.emit("if(")
+	host.emitter.emit("if((")
 	host.comparison()
 
 	host.match(TokenType.THEN)
 	host.nl()
-	host.emitter.emitLine("){")
+	host.emitter.emitLine(")){")
 
 	# Zero or more statements in the body.
 	while not host.checkToken(TokenType.ENDIF):
@@ -100,12 +100,12 @@ def funcIF(host, TokenType):
 # "WHILE" comparison "REPEAT" block "ENDWHILE"
 def funcWHILE(host, TokenType):
 	host.nextToken()
-	host.emitter.emit("while(")
+	host.emitter.emit("while((")
 	host.comparison()
 
 	host.match(TokenType.REPEAT)
 	host.nl()
-	host.emitter.emitLine("){")
+	host.emitter.emitLine(")){")
 
 	# Zero or more statements in the loop body.
 	while not host.checkToken(TokenType.ENDWHILE):

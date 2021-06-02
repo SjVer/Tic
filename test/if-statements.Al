@@ -1,0 +1,71 @@
+# numbers
+Declare numbera = 1
+Declare numberb = 1
+Declare numberc = 2
+
+If numbera == numberb Then
+	PrintLine "true! 1/9"
+EndIf
+
+If numbera == numberc Then
+	PrintLine "false! 1"
+EndIf
+
+If numbera != numberc Then
+	PrintLine "true! 2/9"
+EndIf
+
+
+# bools
+Declare boola = true
+Declare boolb = false
+
+If boola Then
+	PrintLine "true! 3/9"	
+EndIf
+
+If boolb Then
+	PrintLine "false! 2"
+EndIf
+
+If boolb == false Then
+	PrintLine "true! 4/9"
+EndIf
+
+
+# bools and numbers
+If numbera Then
+	PrintLine "true! 5/9"
+EndIf
+
+If numbera == true Then
+	PrintLine "true! 6/9"
+EndIf
+
+Set numberc = 0
+
+If numberc Then
+	PrintLine "false! 3"
+EndIf
+
+
+# if-or and if-and statements
+If true Or false Then
+	PrintLine "true! 7/9"
+EndIf
+
+If false Or false Or 1 == 1 Then
+	PrintLine "true! 8/9"
+EndIf
+
+If numberc == numbera Or boola == boolb Then
+	PrintLine "false! 4"
+EndIf
+
+If true And true Then
+	PrintLine "true! 9/9"
+EndIf
+
+If true And false Then
+	PrintLine "false! 5"
+EndIf
