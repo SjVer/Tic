@@ -392,7 +392,7 @@ if __name__ == "__main__":
 	# noinspection PyDeprecation
 	import imp, os
 	
-	modpath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'attemptide')
-	attemptide = imp.load_source('attemptide', modpath)
+	modpath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ticide')
+	ticide = imp.load_source('ticide', modpath)
 	os.system('cls' if os.name in ('nt', 'dos') else 'clear')
-	attemptide.MainWindow()
+	ticide.MainWindow()

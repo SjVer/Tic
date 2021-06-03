@@ -27,8 +27,8 @@ All that's left then is for the main script to compile that c script using e.g. 
 The full documentation is [here](Documentation.md) <br/>
 Code examples can be found in /test
 
-### AttemptIDE
-The IDE for Tic, AttemptIDE can be downloaded from the releases page. <br/>
+### Ticide
+The IDE for Tic, Ticide can be downloaded from the releases page. <br/>
 See `Editor.md` for more information.
 
 ### Credits
