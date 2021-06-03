@@ -1,0 +1,9 @@
+E: ticide: changelog-file-missing-in-native-package
+W: ticide: no-section-field
+W: ticide: script-with-language-extension usr/bin/editor_class.py
+W: ticide: script-with-language-extension usr/bin/windows.py
+W: ticide: binary-without-manpage usr/bin/editor_class.py
+W: ticide: binary-without-manpage usr/bin/ticide
+W: ticide: binary-without-manpage usr/bin/windows.py
+E: ticide: md5sums-lists-nonexistent-file usr/share/doc/ticide/copyrigh
+W: ticide: file-missing-in-md5sums usr/share/doc/ticide/copyright

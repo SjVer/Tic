@@ -1,7 +1,7 @@
 [DEBREATE-0.7.13]
 <<CTRL>>
-Package: attemptcomp
-Version: 1.1
+Package: ticcomp
+Version: 1.2
 Maintainer: Sjoerd Vermeulen <sjoerd@marsenaar.com>
 Section: interpreters
 Architecture: all
@@ -9,17 +9,17 @@ Priority: optional
 Depends: python3
 Recommends: gcc
 Description: Compiler for AttemptLang
- This is the compiler for AttemptLang. See https://github.com/SjVer/AttemptLang for more information.
+ This is the compiler for Tic. See https://github.com/SjVer/Tic for more information.
 
 <</CTRL>>
 <<FILES>>
 1
-/home/sjoerd/AttemptLang/compiler/attemptcomp* -> attemptcomp -> /usr/bin
-/home/sjoerd/AttemptLang/compiler/emit.py -> emit.py -> /usr/bin
-/home/sjoerd/AttemptLang/compiler/funcs.py -> funcs.py -> /usr/bin
-/home/sjoerd/AttemptLang/compiler/lex.py -> lex.py -> /usr/bin
-/home/sjoerd/AttemptLang/compiler/parse.py -> parse.py -> /usr/bin
-/home/sjoerd/AttemptLang/compiler/tokens.py -> tokens.py -> /usr/bin
+/home/sjoerd/Tic/compiler/ticcomp* -> ticcomp -> /usr/bin
+/home/sjoerd/Tic/compiler/tokens.py -> tokens.py -> /usr/bin
+/home/sjoerd/Tic/compiler/parse.py -> parse.py -> /usr/bin
+/home/sjoerd/Tic/compiler/lex.py -> lex.py -> /usr/bin
+/home/sjoerd/Tic/compiler/funcs.py -> funcs.py -> /usr/bin
+/home/sjoerd/Tic/compiler/emit.py -> emit.py -> /usr/bin
 <</FILES>>
 <<SCRIPTS>>
 <<PREINST>>

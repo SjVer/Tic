@@ -1,5 +1,5 @@
-Package: attemptcomp
-Version: 1.0
+Package: ticcomp
+Version: 1.2
 Maintainer: Sjoerd Vermeulen <sjoerd@marsenaar.com>
 Section: interpreters
 Architecture: all
@@ -7,4 +7,4 @@ Priority: optional
 Depends: python3
 Recommends: gcc
 Description: Compiler for AttemptLang
- This is the compiler for AttemptLang. See https://github.com/SjVer/AttemptLang for more information.
+ This is the compiler for Tic. See https://github.com/SjVer/Tic for more information.

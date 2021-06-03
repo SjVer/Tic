@@ -1,21 +1,20 @@
 [DEBREATE-0.7.13]
 <<CTRL>>
-Package: attemptide
-Version: 1.0
+Package: ticide
+Version: 1.1
 Maintainer: sjoerd vermeulen <sjoerd@marsenaar.com>
 Architecture: all
 Priority: optional
-Depends: python3, python3-gi, python3-pip, attemptcomp, libssl-dev, python3-dev, default-jdk, gir1.2-gtksource-3.0
+Depends: python3, python3-gi, python3-pip, libssl-dev, python3-dev, default-jdk, gir1.2-gtksource-3.0, ticcomp
 Description: IDE for AttemtLang
- , gir1.2-gtk-3.0, gobject-introspection
- see https://github.com/SjVer/AttemptLang for more info
+ see https://github.com/SjVer/Tic for more info
 
 <</CTRL>>
 <<FILES>>
 1
-/home/sjoerd/AttemptLang/editor/attemptide* -> attemptide -> /usr/bin
-/home/sjoerd/AttemptLang/editor/editor_class.py -> editor_class.py -> /usr/bin
-/home/sjoerd/AttemptLang/editor/windows.py -> windows.py -> /usr/bin
+/home/sjoerd/Tic/editor/ticide* -> ticide -> /usr/bin
+/home/sjoerd/Tic/editor/windows.py -> windows.py -> /usr/bin
+/home/sjoerd/Tic/editor/editor_class.py -> editor_class.py -> /usr/bin
 <</FILES>>
 <<SCRIPTS>>
 <<PREINST>>
