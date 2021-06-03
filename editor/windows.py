@@ -236,7 +236,7 @@ class BuildMainWindow:
 
 	def on_help_clicked(self, button):
 		# redirect to webpage
-		webbrowser.open("https://github.com/SjVer/AttemptLang")
+		webbrowser.open("https://github.com/SjVer/Tic")
 
 	def remove_current_page(self, *args):
 		# remove current editor
@@ -301,7 +301,7 @@ class BuildMainWindow:
 
 		binFileHandle, binFileName = tempfile.mkstemp()
 
-		compile_command =["/usr/bin/attemptcomp", ed._filepath, "-o", binFileName]
+		compile_command =["/usr/bin/ticcomp", ed._filepath, "-o", binFileName]
 		p = Popen(compile_command, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=-1)
 		output, error = p.communicate()
 		output = output.decode("utf-8")
@@ -337,7 +337,7 @@ class BuildMainWindow:
 	def run_in_terminal(self, *args):
 		ed = self.notebook.get_children()[self.notebook.get_current_page()].parent_editor
 		binFileHandle, binFileName = tempfile.mkstemp()
-		compile_command ="/usr/bin/attemptcomp " + ed._filepath + " -o " + binFileName
+		compile_command ="/usr/bin/ticcomp " + ed._filepath + " -o " + binFileName
 		run_command =  binFileName
 		command = f"{compile_command} && {run_command}"
 		os.system("x-terminal-emulator -e 'bash -c \""+command+"; echo; echo script finished. press enter to close the terminal...; read\"'")

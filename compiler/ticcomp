@@ -8,7 +8,7 @@ import sys, argparse, os, tempfile
 
 def main(file, output, compiler, verbose):
     if verbose:
-        print("AttempLang Compiler")
+        print("Tic Compiler")
     
     temp = tempfile.NamedTemporaryFile(suffix=".c", mode="w+t")
 
@@ -45,12 +45,12 @@ def main(file, output, compiler, verbose):
 if __name__ == '__main__':
     
     if '--version' in sys.argv:
-        print(f"AttemptLang compiler version {VERSION} by Sjoerd Vermeulen")
+        print(f"Tic compiler version {VERSION} by Sjoerd Vermeulen")
         sys.exit(0)
 
-    parser = argparse.ArgumentParser('attemptcomp', description='AttemptLang compiler',
+    parser = argparse.ArgumentParser('ticcomp', description='Tic compiler',
                  usage='%(prog)s [-v] input [-o/--output file]\n -h/--help: show help message')
-    parser.add_argument('input', type=str, help='input script (program passed in as .Al file)')
+    parser.add_argument('input', type=str, help='input script (program passed in as .tic file)')
     parser.add_argument('-o', '--output', dest='file', action='store', help='specify the output file')
     parser.add_argument('-c', '--compiler', dest='compiler', default='/usr/bin/gcc', action='store', help='specify the c compiler (gcc by default)')
     parser.add_argument('-v', '--verbose', action='store_true', default=0, help='verbose compiling')
@@ -62,8 +62,8 @@ if __name__ == '__main__':
     if not os.path.exists(args.input):
         print(f"Error: File '{args.input}' does not exist")
         sys.exit(1)
-    if not args.input.endswith('.Al'):
-        print(f"Error: File '{args.input}' is no .Al file")
+    if not args.input.endswith('.tic'):
+        print(f"Error: File '{args.input}' is no .tic file")
         sys.exit(1)
         
     if args.file == None:

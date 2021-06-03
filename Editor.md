@@ -1,5 +1,5 @@
 # AttemptIDE
-AttemptLang's official IDE
+Tic's official IDE
 <br/>
 <br/>
 ### Features
@@ -12,8 +12,8 @@ Scripts can be compiled and ran directly from the IDE.
 <br/>
 <br/>
 ### Other Files
-AttemptIDE fully supports the editing of any file, but naturally only '.Al' files can be compiled and ran.
+AttemptIDE fully supports the editing of any file, but naturally only '.tic' files can be compiled and ran.
 <br/>
 <br/>
 ### Installment And Dependencies
-The deb file for AttemptIDE can be downloaded from the releases page of this github repo. It has some dependencies, including the AttemptLang compiler (also available at the releases page) but nothing big or unstable.
+The deb file for AttemptIDE can be downloaded from the releases page of this github repo. It has some dependencies, including the Tic compiler (also available at the releases page) but nothing big or unstable.

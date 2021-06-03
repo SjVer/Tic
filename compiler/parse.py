@@ -58,8 +58,8 @@ class Parser:
             self.peekToken = templexer.getToken()
 
     def abort(self, message):
-        # raise ValueError("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/AttemptLang or message sjoerd@marsenaar.com")
-        sys.exit("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/AttemptLang or message sjoerd@marsenaar.com")
+        # raise ValueError("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
+        sys.exit("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
         # print('test')
 
     # gets current expression as string

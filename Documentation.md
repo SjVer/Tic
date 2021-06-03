@@ -1,4 +1,4 @@
-# AttemptLang Documentation
+# Tic Documentation
 All currently implemented features are documented here.
 <br/>
 <br/>
