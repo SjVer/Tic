@@ -1,9 +1,0 @@
-E: attemptide: changelog-file-missing-in-native-package
-W: attemptide: no-section-field
-W: attemptide: script-with-language-extension usr/bin/editor_class.py
-W: attemptide: script-with-language-extension usr/bin/windows.py
-W: attemptide: binary-without-manpage usr/bin/attemptide
-W: attemptide: binary-without-manpage usr/bin/editor_class.py
-W: attemptide: binary-without-manpage usr/bin/windows.py
-E: attemptide: md5sums-lists-nonexistent-file usr/share/doc/attemptide/copyrigh
-W: attemptide: file-missing-in-md5sums usr/share/doc/attemptide/copyright
