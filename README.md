@@ -1,10 +1,3 @@
-# Deprecation
-
-AttemptLang has been renamed to Tic and thus moved to a [new repository](https://github.com/SjVer/Tic). The current code in this repository is unstable, but the older [releases](https://github.com/SjVer/AttemptLang/releases) do still work but are outdated in most ways. If you choose to use any of those and encounter a bug or issue, you're on your own. <br/>
-Thanks!
-
-# 
-
 # AttemptLang
 An attempt at making a simple programming language
 <br/>
