@@ -209,6 +209,8 @@ def funcDECLARE(host, TokenType):
 
 	#  Check if ident exists in symbol table. If not, declare it.
 	if varname not in host.variablesDeclared:
+	    ### if host.emitter.override_emit_to_func:
+		###    host.variablesDeclared_in_function[varname] = varname in host.variablesDeclared
 	    host.variablesDeclared[varname] = vartype
 
 	    if vartype == TokenType.STRING:
@@ -418,7 +420,7 @@ def funcFUNCTION(host, TokenType):
 			host.nextToken()
 			# expect DOES or COMMA
 			if host.checkToken(TokenType.DOES):
-				host.emitter.function('){\nprintf(\"\\n\\n%'+'i\", x);')
+				host.emitter.function('){\n')
 			elif host.checkToken(TokenType.COMMA):
 				host.emitter.function(',')
 				host.nextToken()
@@ -434,6 +436,7 @@ def funcFUNCTION(host, TokenType):
 	while not host.checkToken(TokenType.ENDFUNC):
 		host.statement()
 	host.emitter.override_emit_to_func = False
+	host.variablesDeclared_in_function = {}
 
 	host.match(TokenType.ENDFUNC)
 	host.emitter.function('}')
@@ -443,6 +446,10 @@ def funcFUNCTION(host, TokenType):
 		for arg in localargs:
 			if not arg[1]:
 				del host.variablesDeclared[arg[0]]
+	## remove locally declared variables if not in global scope
+	##  for var in host.variablesDeclared_in_function:
+	## 	 if not host.variablesDeclared_in_function[var]:
+	## 		del host.variablesDeclared[var]
 
 	host.functionsDeclared[name] = len(localargs) # tuple of name and amount of args
 
@@ -462,7 +469,7 @@ def funcCALL(host, TokenType):
 	# first generate the call of the wrapper but store information for the wrapper in the process
 	# if func needs args check for them
 	if argsamount > 0:
-		host.emitter.emit(host.curToken.text + ('1' if host.curToken.text + '_wrapper' in host.emitter.wrappers else '') + '_wrapper(')
+		host.emitter.emit(funcname + ('1' if funcname + '_wrapper' in host.emitter.wrappers else '') + '_wrapper(')
 		localargs = {}
 
 		if not host.checkToken(TokenType.WITH):

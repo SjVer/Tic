@@ -120,6 +120,51 @@ See `For`
 See `For`
 <br/> <br/>
 
+**Function** <br/>
+Declares a function. This function can be called once declared, just like in most other languages.
+As of right now parameters and the passing of those is not yet supported, but it is being worked on.
+(The use of parameters is not blocked, but the compiling will result in errors.)
+```
+Function <name> Does
+	<code to execute>
+EndFunction
+```
+When parameters are implemented fully the syntax for a function with variables will be as follows:
+```
+Function <name> Takes <parameters seperated by a comma> Does
+	<code to execute>
+EndFunction
+``` 
+<br/>
+
+**Does** <br/>
+See `Function`
+<br/> <br/>
+
+**EndFunction** <br/>
+See `Function`
+<br/> <br/>
+
+**Takes** <br/>
+See `Function` (not yet implemented)
+<br/> <br/>
+
+**Call** <br/>
+Calls a predeclared function. As of right now passing parameters is not yet supported, but it is being worked on.
+(The use of parameters is not blocked, but the compiling will result in errors.)
+```
+Call <name>
+```
+When parameters are implemented fully the syntax for a calling a function with parameters will be as follows:
+```
+Call <name> With <variables seperated by a comma>
+``` 
+<br/>
+
+**With** <br/>
+See `Call`
+<br/> <br/>
+
 **Exit** <br/>
 Terminates the program with the given exit code
 ```

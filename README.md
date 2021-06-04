@@ -3,7 +3,7 @@ An attempt at making a simple programming language
 <br/>
 
 ### How It Works
-Tic is a compiled language. The compiler itself is written completely in Python and really only converts the Tic code to c code, which in turn gets compiled by a c compiler.
+Tic is a transpiled language. The compiler itself is written completely in Python and really only converts the Tic code to c code, which in turn gets compiled by a c compiler.
 
 The compiler consists out of 4 "modules":
 - The main script
@@ -12,7 +12,7 @@ The compiler consists out of 4 "modules":
 - The emitter
 
 Anyone that did some research into what's behind a compiler will know what these do, however, I'll explain it in short for the ones that don't. <br/> <br/>
-The main script is what ties all of it together. This is the script you need to run when compiling your own script. (It comes with a few options, run `./ticcomp --help` to see those.)
+The main script is what ties all of it together. This is the script you need to run when compiling your own script. (It comes with a few options, run `ticcomp --help` or `./ticcomp --help` depending on whether you're using the package or script, to see those.)
 
 The lexer has the job of turning the Tic script into something the rest of the compiler can work with. It removes whitespaces and comments, and replaces all keywords, strings, etc. with tokens.
 
@@ -28,9 +28,12 @@ The full documentation is [here](Documentation.md) <br/>
 Code examples can be found in /test
 
 ### TicIDE
-The IDE for Tic, Ticide can be downloaded from the releases page. <br/>
+The IDE for Tic, TicIDE can be downloaded from the releases page. <br/>
 See `Editor.md` for more information.
 
 ### Credits
 [Sjoerd Vermeulen](https://github.com/SjVer) (me) <br/>
 [This tutorial](http://web.eecs.utk.edu/~azh/blog/teenytinycompiler1.html) (really reccomend it!)
+<br/>
+<br/>
+By the way, if you know of anything significant that uses the .tic extension please let me know! Thanks!

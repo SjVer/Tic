@@ -1,9 +1,9 @@
 # A simple function
 
-## Function MyFunc Takes x Does
+## Function MyFunc Takes x  <- THIS IS NOT YET SUPPORTED
 Function MyFunc Does
 	PrintLine "MyFunc called!"
 EndFunction
 
-## Call MyFunc With 1
+## Call MyFunc With 1 <- THIS IS NOT YET SUPPORTED
 Call MyFunc

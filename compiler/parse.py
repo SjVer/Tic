@@ -18,6 +18,9 @@ class Parser:
         self.labelsGotoed = set()   # Labels goto'ed so far.
         self.functionsDeclared = {} # key is name and value is amount of args
 
+        self.variablesDeclared_in_function = {} # will be temporarily filled with vars of function
+                                                # and emptied when the funcion is done parsing
+
         self.curToken = None
         self.peekToken = None
         self.nextToken()
