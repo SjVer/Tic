@@ -1,6 +1,33 @@
 # Tic
-An attempt at making a simple programming language
+An attempt at making a simple programming language.
 <br/>
+
+### What is Tic really?
+First things first; Tic is a recreational project. I am working on this programming language for nothing but fun, and thus it is unfair to compare it with other languages. Other than that Tic is a transpiled language. It is a little typed, as you do not have to declare variables with a specific type, but the language detects that for you. This means that variables declared with a string value will remain strings. E.g. a number assigned to a string variable will be converted into a string. (e.g. 1 will become "1".) Another thing to note is that there's no such thing as scopes. When a variable is declared it can be used for the rest of the script. Any wrong code will probably be detected by the transpiler itself but on some rare occasion the assigned c compiler will be the one catching it. Lastly, both the transpiler and IDE included in this project are being written on a Linux device. I honestly cannot guarantee that it'll work on anything else. The compiling part probably won't.
+
+
+### Why Tic?
+There's a good few reasons why Tic is the way it is, why it's unique amongst other languages and why it's good. <br/><br/>
+First of all, Tic is very intuitive. Even when completely new to this language you should be able to easily see what a script does. Take an example of a function:
+```
+Function myfunction Takes x, y Does
+	Print "x plus y is: "
+	PrintLine x + y
+EndFunction
+
+Call myfunction With 2, 3
+```
+This clear and self-explanitory syntax can be a lot more accessible for starting programmers than e.g. JavaScript's function syntax:
+```javascript
+function myfunction(x, y) {
+	console.log("x plus y is: " + (x+y));
+}
+
+myfunction(2, 3);
+```
+<br/>
+Another reason why Tic looks the way it does is (of course) because I like it that way. It's unique and charming in a way not many other languages are. And what it lacks in functionality so far, it makes up for with being a lot of fun to make.
+
 
 ### How It Works
 Tic is a transpiled language. The compiler itself is written completely in Python and really only converts the Tic code to c code, which in turn gets compiled by a c compiler.
