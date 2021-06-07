@@ -93,6 +93,10 @@ class Parser:
         for label in self.labelsGotoed:
             if label not in self.labelsDeclared:
                 self.abort("GoTo: Attempting to go to undeclared label: " + label)
+
+        if "START" in self.labelsDeclared:
+            # specific entry point specified in script. start from there
+            self.emitter.specific_entry = True
     
     # One of the following statements...
     def statement(self):

@@ -1,0 +1,10 @@
+Label one
+PrintLine "second"
+GoTo two
+
+Label START
+PrintLine "first"
+GoTo one
+
+Label two
+PrintLine "third"

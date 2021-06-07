@@ -7,6 +7,7 @@ class Emitter:
 		self.verbose = verbose
 		self.keep_c_file = keep_c_file
 
+		self.specific_entry = False
 		self.override_emit_to_func = False
 
 		self.includes = ""
@@ -52,7 +53,10 @@ class Emitter:
 		self.functions += code
 
 	def writeFile(self):
-		code = self.includes + "\n\n\n" + self.header + "\n\n//funcs:\n\n" + self.functions + "\n\n//wraps:\n\n" + self.wrappers + "\n\n//code:\n\nint main(void){\n" + self.code + "\nreturn 0;\n}"
+		code = self.includes + "\n\n\n" + self.header + \
+		"\n\n//funcs:\n\n" + self.functions + "\n\n//wraps:\n\n" + \
+		self.wrappers + "\n\n//code:\n\nint main(void){\n" + ('goto START;' if self.specific_entry else '') + \
+		self.code + "\nreturn 0;\n}"
 
 		if not self.keep_c_file:
 			self.tempfile.write(code)

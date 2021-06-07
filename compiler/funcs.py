@@ -121,7 +121,7 @@ def funcLABEL(host, TokenType):
 	# Make sure this label doesn't already exist.
 	if host.curToken.text in host.labelsDeclared:
 		host.abort("Label: Label already exists: " + host.curToken.text)
-	host.labelsDeclared[host.curToken.text] = TokenType.NUMBER
+	host.labelsDeclared.add(host.curToken.text)
 
 	host.emitter.emitLine(host.curToken.text + ":")
 	host.match(TokenType.IDENT)

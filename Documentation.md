@@ -5,21 +5,21 @@ Example scripts can be found in the 'test/' directory.
 <br/>
 ## Syntaxes
 **Label** <br/>
-Defines a label to jump to using `GoTo`
+Defines a label to jump to using `GoTo`. If the label "START" is defined anywhere in the script the execution will use that label as an entry point instead of the beginning of the script.
 ```
 Label <name>
 ```
 <br/>
 
 **GoTo** <br/>
-Jumps to predefined label defined with `Label`
+Jumps to predefined label defined with `Label`.
 ```
 GoTo <label>
 ```
 <br/>
 
 **Print** <br/>
-Prints a string or expression to the console
+Prints a string or expression to the console.
 ```
 Print "<string>"
 Print <number>
@@ -54,10 +54,10 @@ Input <variable>
 ```
 <br/>
 
-**Assign** <br/>
-Assigns a value to a variable, this variable must have been declared.
+**Set** <br/>
+Assigns a value to a variable, this variable must have been declared and the new value type must match the type of the variable.
 ```
-Assign <variable> = <value>
+Set <variable> = <value>
 ```
 <br/>
 
