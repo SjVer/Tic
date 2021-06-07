@@ -1,23 +1,26 @@
 #!/usr/bin/python3
-VERSION="1.1.1"
+VERSION="1.2.0"
 
 from lex import *
 from emit import *
 from parse import *
 import sys, argparse, os, tempfile
 
-def main(file, output, compiler, verbose):
+def main(file, output, compiler, verbose, run, preserve_temp):
     if verbose:
         print("Tic Compiler")
     
-    temp = tempfile.NamedTemporaryFile(suffix=".c", mode="w+t")
+    if not preserve_temp:
+        temp = tempfile.NamedTemporaryFile(suffix=".c", mode="w+t")
+    else:
+        temp = os.path.splitext(file)[0]+'.c'
 
     with open(file, 'r') as inputFile:
         input = inputFile.read()
 
     # Initialize the lexer, emitter, and parser.
     lexer = Lexer(input, False)#, verbose)
-    emitter = Emitter(temp, verbose)
+    emitter = Emitter(temp, verbose, preserve_temp)
     parser = Parser(lexer, emitter, verbose)
 
     if verbose:
@@ -32,15 +35,19 @@ def main(file, output, compiler, verbose):
     if not os.path.exists(os.path.dirname(output)):
         os.mkdir(os.path.dirname(output))
     # compile
-    returnval = os.system(f"{compiler} {temp.name} -o {output} -lm")
-    temp.close()
+    returnval = os.system(f"{compiler} {(temp if preserve_temp else temp.name)} -o {output} -lm")
+    if not preserve_temp:
+        temp.close()
 
     returnval = int(bin(returnval).replace("0b", "").rjust(16, '0')[:8], 2)
     if returnval != 0:
         print('Compilation failed with exit code ', returnval)
+        sys.exit(returnval)
 
     elif verbose:
         print("Compiling completed.")
+    if run:
+        os.system(output)
     
 if __name__ == '__main__':
     
@@ -49,11 +56,13 @@ if __name__ == '__main__':
         sys.exit(0)
 
     parser = argparse.ArgumentParser('ticcomp', description='Tic compiler',
-                 usage='%(prog)s [-v] input [-o/--output file]\n -h/--help: show help message')
+                 usage='%(prog)s [-v -r -o <file> -c <compiler> -p] input\n -h/--help: show help message')
     parser.add_argument('input', type=str, help='input script (program passed in as .tic file)')
     parser.add_argument('-o', '--output', dest='file', action='store', help='specify the output file')
     parser.add_argument('-c', '--compiler', dest='compiler', default='/usr/bin/gcc', action='store', help='specify the c compiler (gcc by default)')
     parser.add_argument('-v', '--verbose', action='store_true', default=0, help='verbose compiling')
+    parser.add_argument('-r', '--run', action='store_true', default=0, help='run after compilation')
+    parser.add_argument('-p', '--preserve-temp', action='store_true', default=0, help='preserve temporary c file')
     parser.add_argument('--version', action='store_true', help='print version info')
 
     args = parser.parse_args()
@@ -78,4 +87,4 @@ if __name__ == '__main__':
         print(f"Error: Compiler '{args.compiler}' not found")
         sys.exit(1)
     
-    main(args.input, outfile, args.compiler, args.verbose)
+    main(args.input, outfile, args.compiler, args.verbose, args.run, args.preserve_temp)
