@@ -284,18 +284,18 @@ def funcEXIT(host, TokenType):
 	if host.checkToken(TokenType.NUMBER):
 		if not host.checkPeek(TokenType.NEWLINE) and not host.checkPeek(TokenType.EOF):
 			# expression
-			host.emitter.emit("return (")
+			host.emitter.emit("exit(")
 			host.expression()
 			host.emitter.emitLine(");")
 		
 		else:
 			# Simple number, exit with it.
-			host.emitter.emitLine("return " + host.curToken.text + ";")
+			host.emitter.emitLine("exit(" + host.curToken.text + ");")
 			host.nextToken()
 			
 	elif host.checkToken(TokenType.IDENT):
 		# ident
-		host.emitter.emitLine("return " + host.curToken.text + ";")
+		host.emitter.emitLine("exit(" + host.curToken.text + ");")
 		host.nextToken()
 	else:
 		host.abort(f"Exit: Expected numeric exit code, not '{host.curToken.text}' ({host.curToken.kind.name})")
@@ -406,6 +406,9 @@ def funcFUNCTION(host, TokenType):
 
 	host.nextToken()
 	if host.checkToken(TokenType.TAKES):
+
+		host.abort('Functions with arguments are not yet supported. Sorry!')
+
 		hasargs = True
 		# has args
 		host.nextToken()
@@ -555,3 +558,39 @@ def funcCALL(host, TokenType):
 
 	if not host.checkToken(TokenType.NEWLINE):
 		host.abort(f"Call: Function '{funcname}' takes {argsamount} arguments")
+
+# "RETURN" (ident | number | string | bool | expression)
+def funcRETURN(host, TokenType):
+	host.abort("Return is not yet supported. Sorry!")
+
+	# cannot return if not inside function
+	if not host.emitter.override_emit_to_func:
+		host.abort("Return: Cannot return outside of a function")
+
+
+	host.nextToken()
+	
+	if host.checkToken(TokenType.NUMBER):
+		if not host.checkPeek(TokenType.NEWLINE) and not host.checkPeek(TokenType.EOF):
+			# expression
+			host.emitter.emit("return(")
+			host.expression()
+			host.emitter.emitLine(");")
+		
+		else:
+			# Simple number, exit with it.
+			host.emitter.emitLine("return " + host.curToken.text + ";")
+			host.nextToken()
+			
+	elif host.checkToken(TokenType.IDENT) or host.checkToken(TokenType.BOOL):
+		# ident or bool
+		host.emitter.emitLine("return " + host.curToken.text + ";")
+		host.nextToken()
+
+	elif host.checkToken(TokenType.STRING):
+		# string
+		host.emitter.emitLine("return \"" + host.curToken.text + "\";")
+		host.nextToken()
+
+	else:
+		host.abort(f"Return: Expected return value, not '{host.curToken.text}' ({host.curToken.kind.name})")

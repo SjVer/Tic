@@ -74,6 +74,5 @@ class Emitter:
 
 		if self.verbose:
 			print('\n\ngenerated code:\n--------------------------\n')
-			print(text)
-			#os.system('clang-format ' + self.tempfile.name)        
+			os.system('clang-format ' + (self.tempfile.name if not self.keep_c_file else self.tempfile))        
 			print('\n\n--------------------------\n\n')

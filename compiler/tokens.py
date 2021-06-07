@@ -72,7 +72,7 @@ class TokenType(enum.Enum):
     FOR     = TokenTypeItem(Types.KEYWORD, 'For',       func=funcFOR)
     DO      = TokenTypeItem(Types.KEYWORD, 'Do')
     ENDFOR  = TokenTypeItem(Types.KEYWORD, 'EndFor')
-    EXIT    = TokenTypeItem(Types.KEYWORD, 'Exit',      func=funcEXIT)
+    EXIT    = TokenTypeItem(Types.KEYWORD, 'Exit',      func=funcEXIT,      include=['stdlib'])
     SLEEP   = TokenTypeItem(Types.KEYWORD, 'Sleep',     func=funcSLEEP,     include=['unistd'])
     FUNC    = TokenTypeItem(Types.KEYWORD, 'Function',  func=funcFUNCTION)
     TAKES   = TokenTypeItem(Types.KEYWORD, 'Takes')
@@ -80,6 +80,7 @@ class TokenType(enum.Enum):
     ENDFUNC = TokenTypeItem(Types.KEYWORD, 'EndFunction')
     CALL    = TokenTypeItem(Types.KEYWORD, 'Call',      func=funcCALL)
     WITH    = TokenTypeItem(Types.KEYWORD, 'With')
+    RETURN  = TokenTypeItem(Types.KEYWORD, 'Return',    func=funcRETURN)
     # Operators
     EQ      = TokenTypeItem(Types.OPERATOR)
     PLUS    = TokenTypeItem(Types.OPERATOR)
