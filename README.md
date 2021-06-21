@@ -58,19 +58,19 @@ All that's left then is for the main script to compile that c script using e.g. 
 
 ### Compiler Options
 The ticcomp compiler can be ran with a few different optional arguments:
-* `-o FILE / --output FILE` - specifies the output file 
+* `-o FILE / --output FILE`   - specifies the output file 
 * `-c PATH / --compiler PATH` -  specifies the c compiler
-* `-v / --verbose` - runs the compiler in verbose mode
-* `-r / --run` - runs the compiled executable after compilation
-* `-p / --preserve-temp` - preserves the temporary c file
-* `-g / --generate-header` - generates the c header file for the script (as only output)
+* `-v / --verbose`            - runs the compiler in verbose mode
+* `-r / --run`                - runs the compiled executable after compilation
+* `-p / --preserve-temp`      - preserves the temporary c file
+* `-g / --generate-header`    - generates the c header file for the script (as only output)
 
 ### Documentation
 The full documentation is [here](Documentation.md) <br/>
-Code examples can be found in /test
+Code examples can be found in the `test` directory.
 
 ### TicIDE
-The IDE for Tic, TicIDE can be downloaded from the releases page. <br/>
+The IDE for Tic. TicIDE can be downloaded from the releases page. <br/>
 See `Editor.md` for more information.
 
 ### Credits
