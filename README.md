@@ -10,20 +10,27 @@ First things first; Tic is a recreational project. I am working on this programm
 There's a good few reasons why Tic is the way it is, why it's unique amongst other languages and why it's good. <br/><br/>
 First of all, Tic is very intuitive. Even when completely new to this language you should be able to easily see what a script does. Take an example of a function: (please note that function parameters or not yet supported. They're being worked on.)
 ```
-Function myfunction Takes x, y Does
+Function myfunction Takes
+	{number} x, {number} y
+Does
 	Print "x plus y is: "
 	PrintLine x + y
 EndFunction
 
 Call myfunction With 2, 3
 ```
-This clear and self-explanitory syntax can be a lot more accessible for starting programmers than e.g. JavaScript's function syntax:
-```javascript
-function myfunction(x, y) {
-	console.log("x plus y is: " + (x+y));
+This clear and self-explanitory syntax can be a lot more accessible for starting programmers than e.g. C's function syntax:
+```c
+#include <stdio.h>
+
+void myfunction(int x, int y) {
+	printf("x plus y is: %d", x+y);
 }
 
-myfunction(2, 3);
+int main(void) {
+	myfunction(2, 3);
+	return 0;
+}
 ```
 <br/>
 Another reason why Tic looks the way it does is (of course) because I like it that way. It's unique and charming in a way not many other languages are. And what it lacks in functionality so far, it makes up for with being a lot of fun to make.

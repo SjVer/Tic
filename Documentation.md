@@ -39,11 +39,11 @@ PrintLine <expression>
 <br/>
 
 **Declare** <br/>
-Declares a new variable. The type will be automatically detected and cannot be changed throughout the script.
+Declares a new variable. If no datatype is hinted, a value must be provided and the type will be automatically detected. The datatype of a variable cannot be changed throughout the script.
 ```
-Declare <name> = <number>
-Declare <name> = "<string>"
-Declare <name> = <bool>
+Declare <hint> <name> = <value>
+Declare <hint> <name>
+Declare <name> = <value>
 ```
 <br/>
 
@@ -62,9 +62,15 @@ Set <variable> = <value>
 <br/>
 
 **If** <br/>
-Executes a block of code if the given comparison results to true. This comparison can contain `Or` and `And` statements as well.
+Executes a block of code if the given comparison results to true. This comparison can contain `Or` and `And` statements as well. `Else` statements are also supported.
 ```
 If <comparison> Then
+	<code to execute>
+EndIf
+
+If <comparison> Then
+	<code to execute>
+Else
 	<code to execute>
 EndIf
 
@@ -82,7 +88,11 @@ EndIf
 See `If`
 <br/> <br/>
 
-**EndIf** <br/>
+**Else** <br/>
+See `If`
+<br/> <br/>
+
+**EndIF** <br/>
 See `If`
 <br/> <br/>
 
@@ -128,14 +138,22 @@ As of right now parameters and the passing of those is not yet supported, but it
 Function <name> Does
 	<code to execute>
 EndFunction
-```
-When parameters are implemented fully the syntax for a function with variables will be as follows:
-```
-Function <name> Takes <parameters seperated by a comma> Does
+
+Function <name> Takes <hinted parameters seperated by a comma> Does
+	<code to execute>
+EndFunction
+
+Function <name> Takes
+	<hinted parameters seperated by a comma>
+Does
 	<code to execute>
 EndFunction
 ``` 
 <br/>
+
+**Takes** <br/>
+See `Function` (not yet implemented)
+<br/> <br/>
 
 **Does** <br/>
 See `Function`
@@ -143,10 +161,6 @@ See `Function`
 
 **EndFunction** <br/>
 See `Function`
-<br/> <br/>
-
-**Takes** <br/>
-See `Function` (not yet implemented)
 <br/> <br/>
 
 **Call** <br/>
@@ -212,3 +226,4 @@ All supported operators behave as normal <br/>
 | STRING | String |
 | COMMA | Comma |
 | BOOL | Boolean |
+| HINT | Datatype hint |

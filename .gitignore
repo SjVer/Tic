@@ -1,5 +1,7 @@
 **/__pycache__/
 **/bin/
-parse_old.py
 *.deb
 *.zip
+
+*.sublime-workspace
+*.sublime-project
