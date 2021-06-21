@@ -4,10 +4,15 @@ from funcs import *
 
 # Token contains the original text and the type of token.
 class Token:
-    def __init__(self, tokenText, tokenKind):
+    def __init__(self, tokenText, tokenKind, emittext=None):
         self.text = tokenText   # The token's actual text. Used for identifiers, strings, and numbers.
         self.kind = tokenKind   # The TokenType that this token is classified as.
-        
+        if self.kind == TokenType.HINT:
+            if not emittext:
+                raise AttributeError("TokenType.HINT needs emittext")
+            self.emittext = emittext
+
+
     @staticmethod
     def checkIfKeyword(tokenText):
         for kind in TokenType:
@@ -22,13 +27,27 @@ class Types(enum.Enum):
     OPERATOR = 2
 
 class DataTypes(enum.Enum):
-    STRING = 'String'
-    NUMBER = 'Number'
-    BOOL   = 'Bool'
+    string = 'char *'
+    number = 'float'
+    bool = 'bool'
+
+    @staticmethod
+    def checkIfDataType(text) -> bool:
+        for kind in DataTypes:
+            if kind.name == text:
+                return True
+        return False
+
+    @staticmethod
+    def getEmitText(text):
+        for kind in DataTypes:
+            if kind.name == text:
+                return kind.value
+        return None
 
 # token values
 class TokenTypeItem:
-    def __init__(self, ttype: Types, keyword: str = None, func = None, include: list = None):
+    def __init__(self, ttype: Types, keyword: str = None, func = None, include: list = None, datatype=None):
         self.type = ttype
         if self.type == Types.KEYWORD:
             if keyword == None:
@@ -44,6 +63,7 @@ class TokenTypeItem:
             self.execute = None
         self.include = include
 
+
 # TokenType is our enum for all the types of tokens.
 class TokenType(enum.Enum):
     EOF     = TokenTypeItem(Types.SYMBOL)
@@ -53,6 +73,7 @@ class TokenType(enum.Enum):
     STRING  = TokenTypeItem(Types.SYMBOL,   include=['string'])
     COMMA   = TokenTypeItem(Types.SYMBOL)
     BOOL    = TokenTypeItem(Types.SYMBOL,   include=['stdbool'])
+    HINT    = TokenTypeItem(Types.SYMBOL,   include=['stdbool'])
     # Keywords
     LABEL   = TokenTypeItem(Types.KEYWORD, 'Label',     func=funcLABEL)
     GOTO    = TokenTypeItem(Types.KEYWORD, 'GoTo',      func=funcGOTO)
@@ -65,6 +86,7 @@ class TokenType(enum.Enum):
     OR      = TokenTypeItem(Types.KEYWORD, 'Or')
     AND     = TokenTypeItem(Types.KEYWORD, 'And')
     THEN    = TokenTypeItem(Types.KEYWORD, 'Then')
+    ELSE    = TokenTypeItem(Types.KEYWORD, 'Else')
     ENDIF   = TokenTypeItem(Types.KEYWORD, 'EndIf')
     WHILE   = TokenTypeItem(Types.KEYWORD, 'While',     func=funcWHILE)
     REPEAT  = TokenTypeItem(Types.KEYWORD, 'Repeat')

@@ -1,10 +1,10 @@
 # Compute average of given values.
 
-Declare a = 0
+Declare {number} a
 Print "Enter number of scores: "
 Input a
 
-Declare s = 0
+Declare {number} s
 PrintLine "Enter one value at a time: "
 For b, 0, a - 1, 1 Do
     Declare c = 1

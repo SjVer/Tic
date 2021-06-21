@@ -18,7 +18,7 @@ class Emitter:
 
 	def emit(self, code):
 		if self.verbose:
-			print("EMIT: " + code)
+			print("EMIT"+(" FUNCTION" if self.override_emit_to_func else "")+": " + code)
 		if self.override_emit_to_func:
 			self.functions += code + '\n'
 		else:
@@ -26,7 +26,7 @@ class Emitter:
 
 	def emitLine(self, code):
 		if self.verbose:
-			print("EMIT: " + code)
+			print("EMIT"+(" FUNCTION" if self.override_emit_to_func else "")+": " + code)
 		if self.override_emit_to_func:
 			self.functions += code + '\n'
 		else:
@@ -76,3 +76,4 @@ class Emitter:
 			print('\n\ngenerated code:\n--------------------------\n')
 			os.system('clang-format ' + (self.tempfile.name if not self.keep_c_file else self.tempfile))        
 			print('\n\n--------------------------\n\n')
+

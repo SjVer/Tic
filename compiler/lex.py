@@ -116,7 +116,24 @@ class Lexer:
                 self.nextChar()
 
             tokText = self.source[startPos : self.curPos] # Get the substring.
+
+
             token = Token(tokText, TokenType.STRING)
+
+        elif self.curChar == "{":
+            # datatype
+            self.nextChar()
+            startPos = self.curPos
+
+            while self.curChar != "}":
+                self.nextChar()
+
+            tokText = self.source[startPos : self.curPos]
+
+            if not DataTypes.checkIfDataType(tokText):
+                self.abort("Expected valid datatype, not \""+tokText+"\"")
+
+            token = Token(tokText, TokenType.HINT, DataTypes.getEmitText(tokText))
             
         elif self.curChar.isdigit():
             # Leading character is a digit, so this must be a number.

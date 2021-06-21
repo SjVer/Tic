@@ -47,6 +47,10 @@ class Parser:
     # Advances the current token.
     def nextToken(self, templexer = None):
         self.curToken = self.peekToken
+
+        if self.curToken != None and self.verbose:
+            print("TOKEN: "+self.curToken.kind.name)
+
         if templexer == None:
             self.peekToken = self.lexer.getToken()
             # No need to worry about passing the EOF, lexer handles that.
@@ -66,14 +70,15 @@ class Parser:
         # print('test')
 
     # gets current expression as string
-    def get_current_expression(self):
+    def get_current_expression(self, save_pos=False):
         oldcur, oldpeek = self.curToken, self.peekToken
         express = ''
         templexer = deepcopy(self.lexer)
         while not self.checkToken(TokenType.NEWLINE) and not self.checkToken(TokenType.EOF) and not self.checkToken(TokenType.COMMA):
             express += self.curToken.text
             self.nextToken(templexer)
-        self.curToken, self.peekToken = oldcur, oldpeek
+        if not save_pos:
+            self.curToken, self.peekToken = oldcur, oldpeek
         return express
 
     # parsing
@@ -97,7 +102,7 @@ class Parser:
         if "START" in self.labelsDeclared:
             # specific entry point specified in script. start from there
             self.emitter.specific_entry = True
-    
+
     # One of the following statements...
     def statement(self):
         # Check the first token to see what kind of statement this is.
@@ -107,6 +112,8 @@ class Parser:
                 if kind.value.execute == None:
                     self.abort("Invalid statement at '" + self.curToken.text + "' (" + self.curToken.kind.name + ")")
                 # found token
+                if self.verbose:
+                    print("\nTOKEN: " + kind.name)
                 kind.value.execute(self, TokenType)
                 break
 			
@@ -223,7 +230,6 @@ class Parser:
     
     # nl ::= '\n'+
     def nl(self):
-        
         # Require at least one newline.
         self.match(TokenType.NEWLINE)
         # But we will allow extra newlines too, of course.

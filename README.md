@@ -8,7 +8,7 @@ First things first; Tic is a recreational project. I am working on this programm
 
 ### Why Tic?
 There's a good few reasons why Tic is the way it is, why it's unique amongst other languages and why it's good. <br/><br/>
-First of all, Tic is very intuitive. Even when completely new to this language you should be able to easily see what a script does. Take an example of a function:
+First of all, Tic is very intuitive. Even when completely new to this language you should be able to easily see what a script does. Take an example of a function: (please note that function parameters or not yet supported. They're being worked on.)
 ```
 Function myfunction Takes x, y Does
 	Print "x plus y is: "

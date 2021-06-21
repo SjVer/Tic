@@ -1,3 +1,11 @@
-Declare a = true
-Input a
-PrintLine a
+Declare {number} mynumber
+Input mynumber
+PrintLine mynumber
+
+Declare {string} mystring
+Input mystring
+PrintLine mystring
+
+Declare {bool} mybool
+Input mybool
+PrintLine mybool

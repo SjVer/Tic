@@ -5,16 +5,9 @@ Declare numberc = 2
 
 If numbera == numberb Then
 	PrintLine "true! 1/9"
-EndIf
-
-If numbera == numberc Then
+Else
 	PrintLine "false! 1"
 EndIf
-
-If numbera != numberc Then
-	PrintLine "true! 2/9"
-EndIf
-
 
 # bools
 Declare boola = true
@@ -46,8 +39,9 @@ Set numberc = 0
 
 If numberc Then
 	PrintLine "false! 3"
+Else
+	PrintLine "true!"
 EndIf
-
 
 # if-or and if-and statements
 If true Or false Then

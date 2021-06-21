@@ -1,15 +1,14 @@
-Declare a = 1 		# number
-Declare b = 1+1 	# number
-Declare c = "test" 	# string
-Declare d = true 	# bool
+# declare a number:
+Declare {number} a = 1
+Declare {number} b
+Declare c = 1
 
-Set a = 2.0 		# correct, because 2.0 is a number
-# Set a = "test"	# incorrect, because a has been declared as a number.
-Set b = 2.25 * 2
-Set c = "lol"
-Set d = false
+# declare a string:
+Declare {string} d = "test"
+Declare {string} e
+Declare f = "test"
 
-PrintLine a
-PrintLine b
-PrintLine c
-PrintLine d
+# declare a boolean:
+Declare {bool} g = true
+Declare {bool} h
+Declare i = true

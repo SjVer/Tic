@@ -2,6 +2,7 @@ import sys
 from lex import *
 import random
 import string
+# from tokens import DataTypes
 
 def randStr(N):
 	# generates a random string of length N
@@ -39,7 +40,16 @@ def funcPRINT(host, TokenType):
 			host.emitter.emitLine(f"if(roundf({host.curToken.text}) == {host.curToken.text})"+'{')
 			host.emitter.emitLine(f"printf(\"%d\", (int){host.curToken.text});")
 			host.emitter.emitLine("}else{")
-			host.emitter.emitLine(f"printf(\"%.3f\", {host.curToken.text});"+'}')
+			# host.emitter.emitLine(f"printf(\"%.3f\", {host.curToken.text});"+'}')
+			i = randStr(10)
+			a = randStr(10)
+			host.emitter.emitLine("int "+i+"=1;");
+			host.emitter.emitLine("while(1){");
+			host.emitter.emitLine("float "+a+"="+host.curToken.text+"*powf(10,"+i+");");
+			host.emitter.emitLine("if("+a+"==(int)"+a+")");
+			host.emitter.emitLine("break;");
+			host.emitter.emitLine(i+"++;}");
+			host.emitter.emitLine("printf(\"%."+"*f\","+i+","+host.curToken.text+");}");
 
 		elif host.variablesDeclared[host.curToken.text] == TokenType.BOOL:
 			host.emitter.emitLine("printf(\"%" + f"s\", {host.curToken.text}?\"true\":\"false\");")
@@ -93,6 +103,10 @@ def funcIF(host, TokenType):
 	# Zero or more statements in the body.
 	while not host.checkToken(TokenType.ENDIF):
 		host.statement()
+		if host.checkToken(TokenType.ELSE):
+			host.emitter.emitLine("}else{")
+			host.nextToken()
+			host.nextToken()
 
 	host.match(TokenType.ENDIF)
 	host.emitter.emitLine("}")
@@ -154,12 +168,12 @@ def funcSET(host, TokenType):
 	# emit shit
 	if host.variablesDeclared[varname] == TokenType.STRING:
 		host.emitter.emit("\"" + host.curToken.text + "\";")
-		# host.match(host.variablesDeclared[varname])
+		host.match(host.variablesDeclared[varname])
 		host.nextToken()
 
 	elif host.variablesDeclared[varname] != TokenType.NUMBER:
 		host.emitter.emit(host.curToken.text + ';')
-		# host.match(host.variablesDeclared[varname])
+		host.match(host.variablesDeclared[varname])
 		host.nextToken()
 
 	# elif host.variablesDeclared[varname]
@@ -172,62 +186,127 @@ def funcSET(host, TokenType):
 			host.emitter.emit(';')
 		else:
 			host.emitter.emit(host.curToken.text + ';')
-			# host.match(TokenType.NUMBER)
+			host.match(TokenType.NUMBER)
 			host.nextToken()
 
 # "DECLARE" type ident = (expression | string | number)
 def funcDECLARE(host, TokenType):
 	host.nextToken()
 
+	ishinted = False
+	hinttoken = None
+	templine = ""
+
+	dontcontinue = False
+	# host.emitter.emit(host.curToken.text + " = ")
+
+	if host.checkToken(TokenType.HINT):
+		# type is hinted. no need for init value
+		ishinted = True
+		hinttoken = host.curToken
+
+		if host.curToken.text == 'string':
+			vartype = TokenType.STRING
+		elif host.curToken.text == 'number':
+			vartype = TokenType.NUMBER
+		elif host.curToken.text == 'bool':
+			vartype = TokenType.BOOL
+
+		## host.emitter.emit(host.curToken.emittext + " ")
+		templine += host.curToken.emittext + " "
+		host.nextToken()
+
 	varname = host.curToken.text
+	##  host.emitter.emit(varname)
+	templine += varname
+	host.match(TokenType.IDENT, False)
 
-	host.emitter.emit(host.curToken.text + " = ")
-	host.match(TokenType.IDENT)
-	host.match(TokenType.EQ)
+	if not ishinted:
+		host.nextToken()
+		host.match(TokenType.EQ)
+		templine += "="
+		##  host.emitter.emit("=")
 
-	if host.checkToken(TokenType.STRING):
-	    # variable contains string
-	    vartype = TokenType.STRING
-	    host.emitter.emit("\"" + host.curToken.text + "\"")
-	    host.nextToken()
-
-	elif host.checkToken(TokenType.BOOL):
-		# variable contains boolean
-	    host.emitter.emit(host.curToken.text)
-	    vartype = TokenType.BOOL
-	    host.nextToken()
-			
+	elif not host.checkPeek(TokenType.NEWLINE) and not host.checkPeek(TokenType.EOF):
+		# init value given
+		host.nextToken()
+		# print(host.peekToken.kind)
+		host.match(TokenType.EQ)
+		templine += "="
+		## host.emitter.emit("=")
 	else:
-		vartype = TokenType.NUMBER
-		if not host.checkPeek(TokenType.NEWLINE) and not host.checkPeek(TokenType.EOF):
-			# expression
-			host.expression()
-		else:
-			# number
-			host.emitter.emit(host.curToken.text)
+		host.nextToken()
+		dontcontinue = True
+
+	if not dontcontinue and not ishinted:
+		# if host.checkToken(TokenType.STRING):
+		if host.checkToken(TokenType.STRING):
+			# variable contains string
+			vartype = TokenType.STRING
+			##  host.emitter.emit("\"" + host.curToken.text + "\"")
+			if not ishinted:
+				templine = "char *" + templine
+				vartype = TokenType.STRING
+			templine += "\""+host.curToken.text+"\""
 			host.nextToken()
+
+		elif host.checkToken(TokenType.BOOL):
+			# variable contains boolean
+			vartype = TokenType.BOOL
+			if not ishinted:
+				templine = "bool " + templine
+				vartype = TokenType.BOOL
+			templine += host.curToken.text
+			##  host.emitter.emit(host.curToken.text)
+			host.nextToken()
+				
+		else:
+			# vartype = TokenType.NUMBER
+			if not host.checkPeek(TokenType.NEWLINE) and not host.checkPeek(TokenType.EOF):
+				# expression
+				if not ishinted:
+					templine = "float " + templine
+					vartype = TokenType.NUMBER
+				templine += host.get_current_expression(True)
+				##  host.expression()
+			else:
+				# number
+				## host.emitter.emit(host.curToken.text)
+				if not ishinted:
+					templine = "float " + templine
+					vartype = TokenType.NUMBER
+				templine += host.curToken.text
+				host.nextToken()
+
+	elif not dontcontinue and ishinted:
+		templine += host.curToken.text
+		host.match(vartype)
 
 	#  Check if ident exists in symbol table. If not, declare it.
 	if varname not in host.variablesDeclared:
-	    ### if host.emitter.override_emit_to_func:
+		### if host.emitter.override_emit_to_func:
 		###    host.variablesDeclared_in_function[varname] = varname in host.variablesDeclared
-	    host.variablesDeclared[varname] = vartype
+		host.variablesDeclared[varname] = vartype
 
-	    if vartype == TokenType.STRING:
-	        deftype = 'char *{}'
-	    elif vartype == TokenType.NUMBER:
-	        deftype = 'float {}'
-	    elif vartype == TokenType.BOOL:
-	        deftype = 'bool {}'     
+		# if vartype == TokenType.STRING:
+		#     deftype = 'char *{}'
+		# elif vartype == TokenType.NUMBER:
+		#     deftype = 'float {}'
+		# elif vartype == TokenType.BOOL:
+		#     deftype = 'bool {}'     
 
-	    # host.nextToken()
-	    host.emitter.headerLine(deftype.format(varname) + ";")
+		# host.nextToken()
+		# host.emitter.headerLine(deftype.format(varname) + ";")
+		host.emitter.emitLine(templine + ';')
+		# host.nextToken()
 	
 	# var already exists. abort
 	else:
 		host.abort(f"Declare: Variable '{varname}' is already declared.")
 
-	host.emitter.emitLine(";")
+	# host.emitter.emitLine(";")
+	# host.nextToken()
+	# host.nl()
 
 # "INPUT" ident
 def funcINPUT(host, TokenType):
@@ -238,15 +317,7 @@ def funcINPUT(host, TokenType):
 	# check variable exists else abort
 	if varname not in host.variablesDeclared:
 		host.abort("Input: Attempted to assign input to undeclared variable " + varname)
-	#host.variablesDeclared[host.curToken.text] = 'lol'
-	# 	host.emitter.headerLine("float " + host.curToken.text + ";")
 
-	# Emit scanf but also validate the input. If invalid, set the variable to 0 and clear the input.
-	# host.emitter.emitLine("if(0 == scanf(\"%" + "f\", &" + host.curToken.text + ")) {")
-	# host.emitter.emitLine(host.curToken.text + " = 0;")
-	# host.emitter.emit("scanf(\"%")
-	# host.emitter.emitLine("*s\");")
-	# host.emitter.emitLine("}")
 	vartype = host.variablesDeclared[varname]
 
 	# generate the right scanf format for each data type
@@ -254,7 +325,11 @@ def funcINPUT(host, TokenType):
 		host.emitter.emitLine("scanf(\"%" + "f\", &" + varname + ");")
 
 	elif vartype == TokenType.STRING:
-		host.emitter.emitLine("scanf(\"%" + "s\", " + varname + ");")
+		tempstr = randStr(10)
+		host.emitter.emitLine("char "+tempstr+"[1000];")
+		host.emitter.emitLine("scanf(\"%" + f"s\", &{tempstr});")
+		host.emitter.emitLine(varname+"="+tempstr+";")
+		# host.emitter.emitLine("scanf(\"%" + "s\", " + varname + ");")
 
 	elif vartype == TokenType.BOOL:
 		# declare and scan a temporary variable to catch the user input
@@ -399,6 +474,7 @@ def funcFUNCTION(host, TokenType):
 
 	hasargs = False
 	localargs = set()
+	funcargs = {}
 
 	# Make sure this function doesn't already exist.
 	if host.curToken.text in host.functionsDeclared:
@@ -407,29 +483,54 @@ def funcFUNCTION(host, TokenType):
 	host.nextToken()
 	if host.checkToken(TokenType.TAKES):
 
-		host.abort('Functions with arguments are not yet supported. Sorry!')
+		# host.abort('Functions with arguments are not yet supported. Sorry!')
 
 		hasargs = True
+		indented_takes = False
 		# has args
 		host.nextToken()
+
+		if host.checkToken(TokenType.NEWLINE):
+			indented_takes = True
+			host.nextToken()
+
 		while not host.checkToken(TokenType.DOES):
-			# expect ident
+			# expect "{HINT} IDENT, " etc..
+
+			host.match(TokenType.HINT, False)
+			vartoken = host.curToken
+			if host.curToken.text == "number":
+				vartype = TokenType.NUMBER
+			if host.curToken.text == "string":
+				vartype = TokenType.STRING
+			if host.curToken.text == "bool":
+				vartype = TokenType.BOOL
+			host.nextToken()
 			host.match(TokenType.IDENT, False)
-			host.emitter.function('void *' + host.curToken.text)
+
+			# print("varname: " + host.curToken.text + " type: " + vartype.name)
+			# print(host.curToken.emittext)
+			# host.emitter.function()
+			host.emitter.function(vartoken.emittext + " " + host.curToken.text)
 
 			localargs.add((host.curToken.text, (host.curToken.text in host.variablesDeclared))) # append to list of local args and tell wether arg is also global or not
-			host.variablesDeclared[host.curToken.text] = 'something'# temporarily append to defined args to avoid false errors
+			funcargs[host.curToken.text] = vartype
+			host.variablesDeclared[host.curToken.text] = vartype # temporarily append to defined args to avoid false errors
 
 			host.nextToken()
-			# expect DOES or COMMA
-			if host.checkToken(TokenType.DOES):
-				host.emitter.function('){\n')
-			elif host.checkToken(TokenType.COMMA):
+			# expect DOES (after newline if indented) or COMMA
+			if host.checkToken(TokenType.COMMA):
 				host.emitter.function(',')
 				host.nextToken()
+			elif indented_takes:
+				host.match(TokenType.NEWLINE)
+				# host.match(TokenType.NEWLINE):
+				host.emitter.function('){\n')
+			else:
+				host.emitter.function('){\n')
 
-			## BUSY WITH PASSING VARS TO FUNCTION N STUFF
 	else:
+		# no vars
 		host.emitter.function('void) {\n')
 
 	host.match(TokenType.DOES)
@@ -454,107 +555,67 @@ def funcFUNCTION(host, TokenType):
 	## 	 if not host.variablesDeclared_in_function[var]:
 	## 		del host.variablesDeclared[var]
 
-	host.functionsDeclared[name] = len(localargs) # tuple of name and amount of args
+	host.functionsDeclared[name] = funcargs
 
 # "CALL" ident ["WITH" ident ["COMMA" ident etc...]]
 def funcCALL(host, TokenType):
 	host.nextToken()
 	host.match(TokenType.IDENT, False)
 	if not host.curToken.text in host.functionsDeclared.keys():
-		host.abort("Call: Calling function before setment: " + host.curToken.text)
+		host.abort("Call: Calling function before declaration: " + host.curToken.text)
 
-	# instead of calling the function generate and call a wrapper to make sure that arguments work
-
-	argsamount = host.functionsDeclared[host.curToken.text]
+	argsamount = len(list(host.functionsDeclared[host.curToken.text]))
 	funcname = host.curToken.text
+	host.emitter.emit(host.curToken.text + "(")
 	host.nextToken()
 
 	# first generate the call of the wrapper but store information for the wrapper in the process
 	# if func needs args check for them
 	if argsamount > 0:
-		host.emitter.emit(funcname + ('1' if funcname + '_wrapper' in host.emitter.wrappers else '') + '_wrapper(')
-		localargs = {}
+		# localargs = {}
 
 		if not host.checkToken(TokenType.WITH):
 			host.abort(f"Call: Function '{funcname}' requires {argsamount} arguments")
 		
+		host.nextToken()
 		for i in range(argsamount):
-			host.nextToken()
-			if host.checkToken(TokenType.NUMBER):
-				if not host.checkPeek(TokenType.NEWLINE) and not host.checkPeek(TokenType.EOF) and not host.checkPeek(TokenType.COMMA):
-					# expression
-					host.emitter.emit("(")
-					localargs[host.get_current_expression()] = 'float'
-					host.expression()
-					host.emitter.emit(")")
-				
-				else:
-					# Simple number, exit with it.
-					host.emitter.emit(host.curToken.text)
-					localargs[host.curToken.text] = 'float' if '.' in host.curToken.text else 'int'
-					host.nextToken()
-					
+			# host.emitter.emit(host.curToken.text)
+			argname = list(host.functionsDeclared[funcname])[i]
+			
+			if host.checkToken(host.functionsDeclared[funcname][argname]):
+				# given parameter is correct datatype (no ident)
+				host.emitter.emit(host.curToken.text)
+
 			elif host.checkToken(TokenType.IDENT):
-				# ident
-				host.emitter.emit(host.curToken.text)
-				# handle var type
-				vartype = host.variablesDeclared[host.curToken.text]
-				localargs[host.curToken.text] = (
-					'string' if vartype == TokenType.STRING else
-					'float' if vartype == TokenType.NUMBER else
-					'bool' if vartype == TokenType.BOOL else 'float')
-				host.nextToken()
+				# given parameter is ident, check if correct datatype
 
-			elif host.checkToken(TokenType.BOOL):
-				# bool
-				host.emitter.emit(host.curToken.text)
-				localargs[host.curToken.text] = 'bool'
-				host.nextToken()
+				# first check if var exists
+				if host.curToken.text not in host.variablesDeclared:
+					host.abort("Call: Variable \"" + host.curToken.text + "\" not defined")
 
-			elif host.checkToken(TokenType.STRING):
-				# string
-				localargs[host.curToken.text] = 'char*'
-				host.emitter.emit("\"" + host.curToken.text + "\"")
-				host.nextToken()
 
+				if not host.variablesDeclared[host.curToken.text] \
+					== host.functionsDeclared[funcname][argname]:
+					host.abort("Call: Parameter \""+argname+"\" needs to be of type " + \
+						host.functionsDeclared[funcname][argname])
+				else:
+					host.emitter.emit(host.curToken.text)
 			else:
-				host.abort(f"Call: Expected number, string, bool or expression, not '{host.curToken.text}' ({host.curToken.kind.name}) Function '{funcname}' takes {argsamount} arguments")
-			if i != argsamount - 1:
+				# wrong parameter
+				host.abort("Call: Parameter \""+argname+"\" needs to be of type " + \
+						host.functionsDeclared[funcname][argname].name)
+
+			host.nextToken()
+
+			if i < argsamount - 1:
+				host.match(TokenType.COMMA)
 				host.emitter.emit(',')
 			else:
-				host.emitter.emit(');\n')
-		# host.nextToken()
-
-		# generate wrapper for calling to fix the parameter issue
-		wrappercode = f"void {funcname + ('1' if funcname + '_wrapper' in host.emitter.wrappers else '')}_wrapper("
-
-		randvars = []
-		for arg, i in zip(localargs.keys(), range(len(localargs.keys()))):
-			# iterate over the local arguments
-			randvar = "randvar"+randStr(5)
-			while randvar in randvars:
-				randvar = "randvar"+randStr(5)
-			randvars.append(randvar)
-			wrappercode += localargs[arg] + ' ' + randvar
-			if i != argsamount - 1:
-				wrappercode += ','
-
-
-		wrappercode += "){\n" + funcname + "("
-
-		for arg, varname in zip(localargs.keys(), randvars):
-			wrappercode += '&' if localargs[arg] in ['float', 'int', 'bool', ''] else ''
-			wrappercode += varname
-			if not varname == randvars[-1]:
-				wrappercode += ','
-
-		wrappercode += ');}'
-
-		host.emitter.wrapperFunc(wrappercode)
+				host.emitter.emitLine(');')
 
 	else:
 		# no args
-		host.emitter.emitLine(funcname + '();')
+		host.emitter.emitLine(');')
 
 	if not host.checkToken(TokenType.NEWLINE):
 		host.abort(f"Call: Function '{funcname}' takes {argsamount} arguments")
