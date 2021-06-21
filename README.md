@@ -56,11 +56,14 @@ The rest of the job is the emitter's. This module simply takes the lines generat
 
 All that's left then is for the main script to compile that c script using e.g. gcc and voila! Your Tic executable is done.
 
-### Future updates
-These are some of the features that'll be added soon:
-* Importing functions and variables from other scripts similar to python's `import`. The syntax will be something like `Use <scriptname>`.
-* The generation of c header files. Instead of outputting an executable (or c file if specified with `--preserve-temp`) this feature will introduce the generation of c header file that can be used like any other c header file. This feature will be used for the `Use` syntax described above.
-
+### Compiler Options
+The ticcomp compiler can be ran with a few different optional arguments:
+* `-o FILE / --output FILE` - specifies the output file 
+* `-c PATH / --compiler PATH` -  specifies the c compiler
+* `-v / --verbose` - runs the compiler in verbose mode
+* `-r / --run` - runs the compiled executable after compilation
+* `-p / --preserve-temp` - preserves the temporary c file
+* `-g / --generate-header` - generates the c header file for the script (as only output)
 
 ### Documentation
 The full documentation is [here](Documentation.md) <br/>

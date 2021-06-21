@@ -186,6 +186,15 @@ StartWith <hinted variables seperated by a comma>
 ```
 <br/>
 
+**Use** <br/>
+Imports all functions from the given Tic script, similar to Python's `from <scriptname> import *`. If the script name isn't surrounded by quotes the compiler will assume that the given script exists in the same directory as the script that's using it. If this is not the case the script name must be given as either an absolute or relative path in the form of a string.
+```
+Use <scriptname>
+Use "<scriptpath>"
+```
+<br/>
+
+
 
 **Exit** <br/>
 Terminates the program with the given exit code
