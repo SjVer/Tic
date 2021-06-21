@@ -63,7 +63,6 @@ class TokenTypeItem:
             self.execute = None
         self.include = include
 
-
 # TokenType is our enum for all the types of tokens.
 class TokenType(enum.Enum):
     EOF     = TokenTypeItem(Types.SYMBOL)
@@ -73,7 +72,7 @@ class TokenType(enum.Enum):
     STRING  = TokenTypeItem(Types.SYMBOL,   include=['string'])
     COMMA   = TokenTypeItem(Types.SYMBOL)
     BOOL    = TokenTypeItem(Types.SYMBOL,   include=['stdbool'])
-    HINT    = TokenTypeItem(Types.SYMBOL,   include=['stdbool'])
+    HINT    = TokenTypeItem(Types.SYMBOL,   include=['stdbool', 'string'])
     # Keywords
     LABEL   = TokenTypeItem(Types.KEYWORD, 'Label',     func=funcLABEL)
     GOTO    = TokenTypeItem(Types.KEYWORD, 'GoTo',      func=funcGOTO)
@@ -103,6 +102,7 @@ class TokenType(enum.Enum):
     CALL    = TokenTypeItem(Types.KEYWORD, 'Call',      func=funcCALL)
     WITH    = TokenTypeItem(Types.KEYWORD, 'With')
     RETURN  = TokenTypeItem(Types.KEYWORD, 'Return',    func=funcRETURN)
+    STARTW  = TokenTypeItem(Types.KEYWORD, 'StartWith', func=funcSTARTW,    include=['stdlib', 'string'])
     # Operators
     EQ      = TokenTypeItem(Types.OPERATOR)
     PLUS    = TokenTypeItem(Types.OPERATOR)

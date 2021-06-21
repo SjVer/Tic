@@ -58,7 +58,6 @@ All that's left then is for the main script to compile that c script using e.g. 
 
 ### Future updates
 These are some of the features that'll be added soon:
-* Passing command-line arguements to the script using a syntax along the lines of `StartWith <hinted variables sperated by a comma>`.
 * Importing functions and variables from other scripts similar to python's `import`. The syntax will be something like `Use <scriptname>`.
 * The generation of c header files. Instead of outputting an executable (or c file if specified with `--preserve-temp`) this feature will introduce the generation of c header file that can be used like any other c header file. This feature will be used for the `Use` syntax described above.
 

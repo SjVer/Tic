@@ -11,9 +11,11 @@ class Emitter:
 		self.override_emit_to_func = False
 
 		self.includes = ""
-		self.wrappers = ""
 		self.functions = ""
 		self.header = ""
+		self.maincall = ""
+		self.maincallargs = []
+		self.mainargs = ""
 		self.code = ""
 
 	def emit(self, code):
@@ -42,10 +44,20 @@ class Emitter:
 			print("EMIT INCLUDE: " + code)
 		self.includes += code + '\n'
 
-	def wrapperFunc(self, code):
+	def emitMainArg(self, code):
 		if self.verbose:
-			print("EMIT WRAPPER: " + code)
-		self.wrappers += code + '\n'
+			print("EMIT MAINARG: "+code)
+		self.mainargs += code
+
+	def emitMainCall(self, code):
+		if self.verbose:
+			print("EMIT MAINCALL: " + code)
+		self.maincall += code
+
+	def emitMainCallLine(self, code):
+		if self.verbose:
+			print("EMIT MAINCALL: " + code)
+		self.maincall += code + "\n"
 
 	def function(self, code):
 		if self.verbose:
@@ -53,10 +65,17 @@ class Emitter:
 		self.functions += code
 
 	def writeFile(self):
-		code = self.includes + "\n\n\n" + self.header + \
-		"\n\n//funcs:\n\n" + self.functions + "\n\n//wraps:\n\n" + \
-		self.wrappers + "\n\n//code:\n\nint main(void){\n" + ('goto START;' if self.specific_entry else '') + \
-		self.code + "\nreturn 0;\n}"
+		code = \
+			self.includes + "\n\n" + self.header + \
+			"\n\n//funcs:\n\n" + self.functions + \
+			"\n\n//code:\n\nint MAIN("+(self.mainargs if self.mainargs != "" else "void")+"){\n" +\
+			('goto START;' if self.specific_entry else '') + \
+			self.code + "\nreturn 0;\n}" +\
+			"\n\n//maincall:\n\nint main(int argc, char *argv[]){\n" + \
+			"if(argc-1 != "+str(len(self.maincallargs))+") {printf(\"Expected "+\
+			str(len(self.maincallargs))+" arguments, got %"+"d.\\n\", argc-1);return 1;}"+\
+			self.maincall + "return MAIN("+\
+			(','.join(self.maincallargs) if self.maincallargs != [] else "")+"); }"
 
 		if not self.keep_c_file:
 			self.tempfile.write(code)

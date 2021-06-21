@@ -21,6 +21,8 @@ class Parser:
         self.variablesDeclared_in_function = {} # will be temporarily filled with vars of function
                                                 # and emptied when the funcion is done parsing
 
+        self.allowstartwith = True
+
         self.curToken = None
         self.peekToken = None
         self.nextToken()
@@ -93,6 +95,7 @@ class Parser:
         # Parse all the statements in the program.
         while not self.checkToken(TokenType.EOF):
             self.statement()
+            self.allowstartwith = False
 
         # Check that each label referenced in a GOTO is declared.
         for label in self.labelsGotoed:

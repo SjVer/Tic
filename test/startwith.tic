@@ -1,0 +1,8 @@
+StartWith {number} x, {string} y, {bool} z
+
+Print "first arg (number): "
+PrintLine x
+Print "second arg (string): "
+PrintLine y
+Print "third arg (bool): "
+PrintLine z

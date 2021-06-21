@@ -655,3 +655,53 @@ def funcRETURN(host, TokenType):
 
 	else:
 		host.abort(f"Return: Expected return value, not '{host.curToken.text}' ({host.curToken.kind.name})")
+
+# "StartWith HINT IDENT, etc..
+def funcSTARTW(host, TokenType):
+	host.nextToken()
+
+	if not host.allowstartwith:
+		host.abort("StartWith: This syntax can only be used at the start of the script")
+
+	def handlevar(isfirst=False):
+		# emit type and varname to main parameters
+		if not isfirst:
+			host.emitter.emitMainArg(",")
+		host.emitter.emitMainArg(host.curToken.emittext + " ")
+		host.emitter.emitMainCall(host.curToken.emittext + " ")
+
+		if host.curToken.text == "number":
+			vartype = TokenType.NUMBER
+		if host.curToken.text == "string":
+			vartype = TokenType.STRING
+		if host.curToken.text == "bool":
+			vartype = TokenType.BOOL
+
+		host.match(TokenType.HINT)
+		host.emitter.emitMainArg(host.curToken.text)
+		host.emitter.maincallargs.append(host.curToken.text)
+		host.variablesDeclared[host.curToken.text] = vartype
+
+		host.emitter.emitMainCall(host.curToken.text)
+		varname = host.curToken.text
+		if vartype == TokenType.NUMBER:
+			host.emitter.emitMainCallLine("=atof(argv["+\
+				str(len(host.emitter.maincallargs))+"]);")
+		elif vartype == TokenType.STRING:
+			host.emitter.emitMainCallLine("=argv["+\
+				str(len(host.emitter.maincallargs))+"];")
+		elif vartype == TokenType.BOOL:
+			host.emitter.emitMainCallLine(";")
+			host.emitter.emitMainCallLine("if(strcmp(argv["+\
+				str(len(host.emitter.maincallargs))+"], \"true\") == 0)")
+			host.emitter.emitMainCallLine(varname+"=true;")
+			host.emitter.emitMainCallLine("else")
+			host.emitter.emitMainCallLine(varname+"=false;")
+
+		host.match(TokenType.IDENT)
+
+	handlevar(True)
+
+	while not host.checkToken(TokenType.NEWLINE):
+		host.match(TokenType.COMMA)
+		handlevar()

@@ -179,6 +179,14 @@ Call <name> With <variables seperated by a comma>
 See `Call`
 <br/> <br/>
 
+**StartWith** <br/>
+Defines what variables should be passed to the script when executing it. This syntax can only be used once and must be the first syntax of the script.
+```
+StartWith <hinted variables seperated by a comma>
+```
+<br/>
+
+
 **Exit** <br/>
 Terminates the program with the given exit code
 ```
