@@ -1,4 +1,4 @@
-Declare {number] code
+Declare {number} code
 Print "Enter an exit code: "
 Input code
 

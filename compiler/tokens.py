@@ -76,9 +76,9 @@ class TokenType(enum.Enum):
     # Keywords
     LABEL   = TokenTypeItem(Types.KEYWORD, 'Label',     func=funcLABEL)
     GOTO    = TokenTypeItem(Types.KEYWORD, 'GoTo',      func=funcGOTO)
-    PRINT   = TokenTypeItem(Types.KEYWORD, 'Print',     func=funcPRINT,     include=['stdio', 'math'])
-    PRINTLN = TokenTypeItem(Types.KEYWORD, 'PrintLine', func=funcPRINTLN,   include=['stdio', 'math'])
-    INPUT   = TokenTypeItem(Types.KEYWORD, 'Input',     func=funcINPUT,     include=['stdio', 'string', 'ctype'])
+    PRINT   = TokenTypeItem(Types.KEYWORD, 'Print',     func=funcPRINT,     include=['math'])
+    PRINTLN = TokenTypeItem(Types.KEYWORD, 'PrintLine', func=funcPRINTLN,   include=['math'])
+    INPUT   = TokenTypeItem(Types.KEYWORD, 'Input',     func=funcINPUT,     include=['string', 'ctype'])
     DECLARE = TokenTypeItem(Types.KEYWORD, 'Declare',   func=funcDECLARE)
     SET     = TokenTypeItem(Types.KEYWORD, 'Set',       func=funcSET)
     IF      = TokenTypeItem(Types.KEYWORD, 'If',        func=funcIF)
@@ -103,6 +103,7 @@ class TokenType(enum.Enum):
     WITH    = TokenTypeItem(Types.KEYWORD, 'With')
     RETURN  = TokenTypeItem(Types.KEYWORD, 'Return',    func=funcRETURN)
     STARTW  = TokenTypeItem(Types.KEYWORD, 'StartWith', func=funcSTARTW,    include=['stdlib', 'string'])
+    USE     = TokenTypeItem(Types.KEYWORD, 'Use',       func=funcUSE)
     # Operators
     EQ      = TokenTypeItem(Types.OPERATOR)
     PLUS    = TokenTypeItem(Types.OPERATOR)

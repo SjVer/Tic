@@ -11,6 +11,7 @@ class Parser:
         self.lexer = lexer
         self.emitter = emitter
         self.verbose = verbose
+        # self.curdir = curdir
 
         self.includes = set() # includes needed
         self.variablesDeclared = {} # Variables declared so far. key is name and value is type
@@ -21,12 +22,17 @@ class Parser:
         self.variablesDeclared_in_function = {} # will be temporarily filled with vars of function
                                                 # and emptied when the funcion is done parsing
 
+        self.headerfiles = set()
         self.allowstartwith = True
 
         self.curToken = None
         self.peekToken = None
-        self.nextToken()
-        self.nextToken()    # Call this twice to initialize current and peek.
+
+        self.includes.add('stdio')
+        self.emitter.includes += '#include <stdio.h>\n'
+
+        self.nextToken(doprint=False)
+        self.nextToken(doprint=False)    # Call this twice to initialize current and peek.
 
     # Return true if the current token matches.
     def checkToken(self, kind):
@@ -47,10 +53,10 @@ class Parser:
             self.nextToken()
 
     # Advances the current token.
-    def nextToken(self, templexer = None):
+    def nextToken(self, templexer = None, doprint=True):
         self.curToken = self.peekToken
 
-        if self.curToken != None and self.verbose:
+        if self.curToken != None and self.verbose and doprint:
             print("TOKEN: "+self.curToken.kind.name)
 
         if templexer == None:
@@ -60,16 +66,26 @@ class Parser:
             # check for includes and add to headers if needed
             if self.curToken != None and self.curToken.kind.value.include != None:
                 for include in self.curToken.kind.value.include:
-                    if not include in self.includes:
-                        self.includes.add(include)
-                        self.emitter.includeLine(f"#include <{include}.h>")
+                    self.include(include)
         else:
             self.peekToken = templexer.getToken()
+
+    def include(self, header, inlib=True):
+        if not header in self.includes:
+            self.includes.add(header)
+            if inlib:
+                self.emitter.includeLine(f"#include <{header}.h>")
+            else:
+                self.emitter.includeLine(f"#include \"{header}\"")
 
     def abort(self, message):
         # raise ValueError("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
         sys.exit("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
         # print('test')
+
+    def print(self, message=""):
+        if self.verbose:
+            print(message)
 
     # gets current expression as string
     def get_current_expression(self, save_pos=False):
@@ -90,7 +106,7 @@ class Parser:
         
         # Since some newlines are required in our grammar, need to skip the excess.
         while self.checkToken(TokenType.NEWLINE):
-            self.nextToken()
+            self.nextToken(doprint=False)
 
         # Parse all the statements in the program.
         while not self.checkToken(TokenType.EOF):
@@ -115,8 +131,7 @@ class Parser:
                 if kind.value.execute == None:
                     self.abort("Invalid statement at '" + self.curToken.text + "' (" + self.curToken.kind.name + ")")
                 # found token
-                if self.verbose:
-                    print("\nTOKEN: " + kind.name)
+                self.print("\nTOKEN: " + kind.name)
                 kind.value.execute(self, TokenType)
                 break
 			

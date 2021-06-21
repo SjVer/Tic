@@ -1,12 +1,15 @@
 # A simple function
 
-# "Function myfunc Takes {number} x, {bool} y Does"
-# is also correct
+Function myfunc Does
+	PrintLine "myfunc called!"
+EndFunction
 
-Function myfunc Takes
+Call myfunc
+
+Function mysecondfunc Takes
 	{number} x, {bool} y
 Does
-	PrintLine "myfunc called!"
+	PrintLine "mysecondfunc called!"
 	Print "x: "
 	PrintLine x
 
@@ -22,4 +25,4 @@ Declare {bool} mybool = true
 Declare mynum = 1
 Input mynum
 
-Call myfunc With mynum, mybool
+Call mysecondfunc With mynum, mybool

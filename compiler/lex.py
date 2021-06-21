@@ -17,7 +17,7 @@ class Lexer:
             self.curChar = '\0'  # EOF
         else:
             self.curChar = self.source[self.curPos]
-        		
+
     # Return the lookahead character.
     def peek(self):
         if self.curPos + 1 >= len(self.source):
@@ -127,6 +127,8 @@ class Lexer:
 
             while self.curChar != "}":
                 self.nextChar()
+                if not self.curChar.isalpha() and not self.curChar == '}':
+                    self.abort("Illegal character in type hint.")
 
             tokText = self.source[startPos : self.curPos]
 

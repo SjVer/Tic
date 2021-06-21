@@ -6,12 +6,17 @@ from emit import *
 from parse import *
 import sys, argparse, os, tempfile
 
-def main(file, output, compiler, verbose, run, preserve_temp):
+def main(file, output, compiler, verbose, run, preserve_temp, generate_header):
     if verbose:
         print("Tic Compiler")
+
+    if generate_header:
+        preserve_temp = True
     
     if not preserve_temp:
         temp = tempfile.NamedTemporaryFile(suffix=".c", mode="w+t")
+    elif generate_header:
+        temp = os.path.splitext(output)[0]+'.h'
     else:
         temp = os.path.splitext(file)[0]+'.c'
 
@@ -20,13 +25,22 @@ def main(file, output, compiler, verbose, run, preserve_temp):
 
     # Initialize the lexer, emitter, and parser.
     lexer = Lexer(input, False)#, verbose)
-    emitter = Emitter(temp, verbose, preserve_temp)
+    emitter = Emitter(temp, verbose, preserve_temp, generate_header)
     parser = Parser(lexer, emitter, verbose)
 
     if verbose:
         print("Parsing file.")
     parser.program() # Start the parser.
-    emitter.writeFile() # Write the output to file.
+    if generate_header:
+        emitter.writeFile(parser.functionsDeclared, parser.includes) # Write the output to file.
+    else:
+        emitter.writeFile() # Write the output to file.
+
+    if generate_header:
+        if verbose:
+            print("Generation of header file complete.")
+        sys.exit(0)
+
     if verbose:
         print("Parsing complete.")
 
@@ -46,6 +60,10 @@ def main(file, output, compiler, verbose, run, preserve_temp):
 
     elif verbose:
         print("Compiling completed.")
+
+    for headerfile in parser.headerfiles:
+        os.remove(headerfile)
+
     if run:
         os.system(output)
     
@@ -56,13 +74,14 @@ if __name__ == '__main__':
         sys.exit(0)
 
     parser = argparse.ArgumentParser('ticcomp', description='Tic compiler',
-                 usage='%(prog)s [-v -r -o <file> -c <compiler> -p] input\n -h/--help: show help message')
+                 usage='%(prog)s [-v -r -o <file> -c <compiler> -p -h] input\n -h/--help: show help message')
     parser.add_argument('input', type=str, help='input script (program passed in as .tic file)')
     parser.add_argument('-o', '--output', dest='file', action='store', help='specify the output file')
     parser.add_argument('-c', '--compiler', dest='compiler', default='/usr/bin/gcc', action='store', help='specify the c compiler (gcc by default)')
     parser.add_argument('-v', '--verbose', action='store_true', default=0, help='verbose compiling')
     parser.add_argument('-r', '--run', action='store_true', default=0, help='run after compilation')
     parser.add_argument('-p', '--preserve-temp', action='store_true', default=0, help='preserve temporary c file')
+    parser.add_argument('-g', '--generate-header', action='store_true', default=0, help='generate a c header file (as only output)')
     parser.add_argument('--version', action='store_true', help='print version info')
 
     args = parser.parse_args()
@@ -87,4 +106,4 @@ if __name__ == '__main__':
         print(f"Error: Compiler '{args.compiler}' not found")
         sys.exit(1)
     
-    main(args.input, outfile, args.compiler, args.verbose, args.run, args.preserve_temp)
+    main(args.input, outfile, args.compiler, args.verbose, args.run, args.preserve_temp, args.generate_header)
