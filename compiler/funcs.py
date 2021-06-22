@@ -290,18 +290,9 @@ def funcDECLARE(self, TokenType):
 		###    self.variablesDeclared_in_function[varname] = varname in self.variablesDeclared
 		self.variablesDeclared[varname] = vartype
 
-		# if vartype == TokenType.STRING:
-		#     deftype = 'char *{}'
-		# elif vartype == TokenType.NUMBER:
-		#     deftype = 'float {}'
-		# elif vartype == TokenType.BOOL:
-		#     deftype = 'bool {}'     
+		# self.emitter.emitLine(templine + ';')
+		self.emitter.headerLine(templine + ';')
 
-		# self.nextToken()
-		# self.emitter.headerLine(deftype.format(varname) + ";")
-		self.emitter.emitLine(templine + ';')
-		# self.nextToken()
-	
 	# var already exists. abort
 	else:
 		self.abort(f"Declare: Variable '{varname}' is already declared.")
@@ -779,6 +770,17 @@ def funcUSE(self, TokenType):
 
 				self.functionsDeclared[funcname] = funcdict
 				# self.emitter.inc
+
+			# vardef
+			elif line.startswith("// DEFVAR"):
+				self.print("\nIMPORTING VARIABLE:")
+				self.print("    LINE: "+line[:-1])
+
+				varname = line.split('!')[1]
+				self.print("    NAME: "+varname)
+				vartype = eval("TokenType."+line.split('{')[1].split('}')[0])
+				self.print("    TYPE: "+str(vartype))
+				self.variablesDeclared[varname] = vartype
 
 			# includedef
 			elif line.startswith("// INCL"):

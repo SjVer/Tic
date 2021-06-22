@@ -1,0 +1,15 @@
+E: ticcomp: changelog-file-missing-in-native-package
+W: ticcomp: extended-description-line-too-long
+W: ticcomp: script-with-language-extension usr/bin/emit.py
+W: ticcomp: script-with-language-extension usr/bin/funcs.py
+W: ticcomp: script-with-language-extension usr/bin/lex.py
+W: ticcomp: script-with-language-extension usr/bin/parse.py
+W: ticcomp: script-with-language-extension usr/bin/tokens.py
+W: ticcomp: binary-without-manpage usr/bin/emit.py
+W: ticcomp: binary-without-manpage usr/bin/funcs.py
+W: ticcomp: binary-without-manpage usr/bin/lex.py
+W: ticcomp: binary-without-manpage usr/bin/parse.py
+W: ticcomp: binary-without-manpage usr/bin/ticcomp
+W: ticcomp: binary-without-manpage usr/bin/tokens.py
+E: ticcomp: md5sums-lists-nonexistent-file usr/share/doc/ticcomp/copyrigh
+W: ticcomp: file-missing-in-md5sums usr/share/doc/ticcomp/copyright

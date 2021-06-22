@@ -65,7 +65,7 @@ class Emitter:
 			print("EMIT FUNCTION: " + code)
 		self.functions += code
 
-	def writeFile(self, funcs=None, includes=None):
+	def writeFile(self, funcs=None, includes=None, variables=None):
 		code = self.includes + "\n\n" + self.header
 		code += "\n\n//funcs:\n\n" + self.functions
 		code += "\n\n//code:\n\nint MAIN("+(self.mainargs if self.mainargs != "" else "void")+"){\n"
@@ -88,6 +88,12 @@ class Emitter:
 					for par in list(funcs[func]):
 						code += "{"+par+":"+funcs[func][par].name+"}"
 				code += "\n"
+
+			# do the same with variables
+			for var in list(variables):
+				code += "// DEFVAR!"+var+"!"
+				code += "{"+variables[var].name+"}\n"
+
 			# do the same with headers
 			code += "// INCL["
 			for incl in includes:
@@ -99,6 +105,7 @@ class Emitter:
 			code += "#ifndef " + os.path.splitext(os.path.basename(self.tempfile))[0].upper() + '_H\n'
 			code += "#define " + os.path.splitext(os.path.basename(self.tempfile))[0].upper() + '_H\n'
 			code += "\n"+self.includes
+			code += "\n\n"+self.header
 			code += "\n\n"+self.functions
 			code += "\n\n#endif"
 			# sys.exit(1)

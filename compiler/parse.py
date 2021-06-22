@@ -7,10 +7,13 @@ from copy import deepcopy
 
 # Parser object keeps track of current token and checks if the code matches the grammar.
 class Parser:
-    def __init__(self, lexer, emitter, verbose):
+    def __init__(self, lexer, emitter, verbose, generating_header):
         self.lexer = lexer
         self.emitter = emitter
         self.verbose = verbose
+        self.generating_header = generating_header
+        # if self.generating_header:
+            # self.varDeclareValues = {} # include init value of declared vars for header
         # self.curdir = curdir
 
         self.includes = set() # includes needed

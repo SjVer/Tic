@@ -26,13 +26,13 @@ def main(file, output, compiler, verbose, run, preserve_temp, generate_header):
     # Initialize the lexer, emitter, and parser.
     lexer = Lexer(input, False)#, verbose)
     emitter = Emitter(temp, verbose, preserve_temp, generate_header)
-    parser = Parser(lexer, emitter, verbose)
+    parser = Parser(lexer, emitter, verbose, generate_header)
 
     if verbose:
         print("Parsing file.")
     parser.program() # Start the parser.
     if generate_header:
-        emitter.writeFile(parser.functionsDeclared, parser.includes) # Write the output to file.
+        emitter.writeFile(parser.functionsDeclared, parser.includes, parser.variablesDeclared) # Write the output to file.
     else:
         emitter.writeFile() # Write the output to file.
 
