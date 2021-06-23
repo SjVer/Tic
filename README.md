@@ -76,7 +76,7 @@ See `Editor.md` for more information.
 ### Extra
 There is a sublime syntax file available for Tic as well (the Tic.sublime-syntax file). This is what it looks like:
 ![Screenshot](SyntaxHighlights.png)
-Pretty neat, huh?
+<br/>Pretty neat, huh?
 
 ### Credits
 [Sjoerd Vermeulen](https://github.com/SjVer) (me) <br/>
