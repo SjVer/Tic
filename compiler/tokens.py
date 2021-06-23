@@ -4,9 +4,10 @@ from funcs import *
 
 # Token contains the original text and the type of token.
 class Token:
-    def __init__(self, tokenText, tokenKind, emittext=None):
+    def __init__(self, tokenText, tokenKind, line, emittext=None):
         self.text = tokenText   # The token's actual text. Used for identifiers, strings, and numbers.
         self.kind = tokenKind   # The TokenType that this token is classified as.
+        self.line = line
         if self.kind == TokenType.HINT:
             if not emittext:
                 raise AttributeError("TokenType.HINT needs emittext")
@@ -86,6 +87,7 @@ class TokenType(enum.Enum):
     AND     = TokenTypeItem(Types.KEYWORD, 'And')
     THEN    = TokenTypeItem(Types.KEYWORD, 'Then')
     ELSE    = TokenTypeItem(Types.KEYWORD, 'Else')
+    ELIF    = TokenTypeItem(Types.KEYWORD, 'ElseIf')
     ENDIF   = TokenTypeItem(Types.KEYWORD, 'EndIf')
     WHILE   = TokenTypeItem(Types.KEYWORD, 'While',     func=funcWHILE)
     REPEAT  = TokenTypeItem(Types.KEYWORD, 'Repeat')
@@ -104,6 +106,7 @@ class TokenType(enum.Enum):
     RETURN  = TokenTypeItem(Types.KEYWORD, 'Return',    func=funcRETURN)
     STARTW  = TokenTypeItem(Types.KEYWORD, 'StartWith', func=funcSTARTW,    include=['stdlib', 'string'])
     USE     = TokenTypeItem(Types.KEYWORD, 'Use',       func=funcUSE)
+    EMITC   = TokenTypeItem(Types.KEYWORD, 'EmitC',     func=funcEMITC,     include=['stdlib', 'stdbool', 'stdio', 'string', 'math', 'ctype'])
     # Operators
     EQ      = TokenTypeItem(Types.OPERATOR)
     PLUS    = TokenTypeItem(Types.OPERATOR)

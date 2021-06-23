@@ -28,8 +28,8 @@ def funcPRINT(self, TokenType):
 		# ident
 		
 		# check if defined
-		if not self.curToken.text in self.variablesDeclared:
-			self.abort(f"Print: Attempted to print undeclared variable '{self.curToken.text}'")
+		if not self.checkVar(self.curToken.text):
+			self.abort(f"Print: Attempted to print undeclared variable '{self.curToken.text}'", self.curToken.line)
 		
 		# detect variable type and emit based off that
 		if self.variablesDeclared[self.curToken.text] == TokenType.STRING:
@@ -45,13 +45,13 @@ def funcPRINT(self, TokenType):
 			# self.emitter.emitLine(f"printf(\"%.3f\", {self.curToken.text});"+'}')
 			i = randStr(10)
 			a = randStr(10)
-			self.emitter.emitLine("int "+i+"=1;");
-			self.emitter.emitLine("while(1){");
-			self.emitter.emitLine("float "+a+"="+self.curToken.text+"*powf(10,"+i+");");
-			self.emitter.emitLine("if("+a+"==(int)"+a+")");
-			self.emitter.emitLine("break;");
-			self.emitter.emitLine(i+"++;}");
-			self.emitter.emitLine("printf(\"%."+"*f\","+i+","+self.curToken.text+");}");
+			self.emitter.emitLine("int "+i+"=1;")
+			self.emitter.emitLine("while(1){")
+			self.emitter.emitLine("float "+a+"="+self.curToken.text+"*powf(10,"+i+");")
+			self.emitter.emitLine("if("+a+"==(int)"+a+")")
+			self.emitter.emitLine("break;")
+			self.emitter.emitLine(i+"++;}")
+			self.emitter.emitLine("printf(\"%."+"*f\","+i+","+self.curToken.text+");}")
 
 		elif self.variablesDeclared[self.curToken.text] == TokenType.BOOL:
 			self.emitter.emitLine("printf(\"%" + f"s\", {self.curToken.text}?\"true\":\"false\");")
@@ -61,39 +61,33 @@ def funcPRINT(self, TokenType):
 
 	else:
 		# Expect an expression and print the result as a float.
-		self.emitter.emit("printf(\"%" + ".3f\", (float)(")
+		# self.emitter.emit("printf(\"%" + ".3f\", (float)(")
+		tempvar = randStr(10)
+		self.emitter.emit("float "+tempvar+"=")
 		self.expression()
-		self.emitter.emitLine("));")
+		self.emitter.emitLine(";")
+		#
+		self.emitter.emitLine(f"if(roundf({tempvar}) == {tempvar})"+'{')
+		self.emitter.emitLine(f"printf(\"%d\", (int){tempvar});")
+		self.emitter.emitLine("}else{")
+		# self.emitter.emitLine(f"printf(\"%.3f\", {self.curToken.text});"+'}')
+		i = randStr(10)
+		a = randStr(10)
+		self.emitter.emitLine("int "+i+"=1;")
+		self.emitter.emitLine("while(1){")
+		self.emitter.emitLine("float "+a+"="+tempvar+"*powf(10,"+i+");")
+		self.emitter.emitLine("if("+a+"==(int)"+a+")")
+		self.emitter.emitLine("break;")
+		self.emitter.emitLine(i+"++;}")
+		self.emitter.emitLine("printf(\"%."+"*f\","+i+","+tempvar+");}")
 
 # "PRINTLN" (expression | string)
 def funcPRINTLN(self, TokenType):
 	funcPRINT(self, TokenType)
 	self.emitter.emitLine('printf(\"\\n\");')
-	# self.nextToken()
-
-	# if self.checkToken(TokenType.STRING):
-	# 	# Simple string, so print it.
-	# 	self.emitter.emitLine("printf(\"" + self.curToken.text + "\\n\");")
-	# 	self.nextToken()
-
-	# elif self.checkToken(TokenType.IDENT):
-	# 	# ident
-	# 	self.emitter.emitLine("printf(\"%" + "s\\n\", " + self.curToken.text + ");")
-	# 	self.nextToken()
-
-	# elif self.checkToken(TokenType.NUMBER):
-	# 	# number
-	# 	self.emitter.emitLine("printf(\"" + self.curToken.text + "\\n\");")
-	# 	self.nextToken()
-
-	# else:
-	# 	# Expect an expression and print the result as a float.
-	# 	self.emitter.emit("printf(\"%" + ".2f\\n\", (float)(")
-	# 	self.expression()
-	# 	self.emitter.emitLine("));")
 
 # "IF" (comparison ["OR" comparison]) "THEN" block "ENDIF"		
-def funcIF(self, TokenType):
+def funcIF(self, TokenType, nested=False):
 	self.nextToken()
 	self.emitter.emit("if((")
 	self.comparison()
@@ -105,13 +99,16 @@ def funcIF(self, TokenType):
 	# Zero or more statements in the body.
 	while not self.checkToken(TokenType.ENDIF):
 		self.statement()
-		if self.checkToken(TokenType.ELSE):
+		if self.checkToken(TokenType.ELIF):
+			self.emitter.emit('}else ')
+			funcIF(self, TokenType, True)
+		elif self.checkToken(TokenType.ELSE):
 			self.emitter.emitLine("}else{")
 			self.nextToken()
 			self.nextToken()
 
-	self.match(TokenType.ENDIF)
-	self.emitter.emitLine("}")
+	self.match(TokenType.ENDIF, not nested)
+	self.emitter.emitLine("}" if not nested else "")
 
 # "WHILE" comparison "REPEAT" block "ENDWHILE"
 def funcWHILE(self, TokenType):
@@ -136,7 +133,7 @@ def funcLABEL(self, TokenType):
 
 	# Make sure this label doesn't already exist.
 	if self.curToken.text in self.labelsDeclared:
-		self.abort("Label: Label already exists: " + self.curToken.text)
+		self.abort("Label: Label already exists: " + self.curToken.text, self.curToken.line)
 	self.labelsDeclared.add(self.curToken.text)
 
 	self.emitter.emitLine(self.curToken.text + ":")
@@ -154,8 +151,8 @@ def funcSET(self, TokenType):
 	self.nextToken()
 	
 	varname = self.curToken.text
-	if not varname in self.variablesDeclared:
-		self.abort(f"Set: Variable {varname} not declared")
+	if not self.checkVar(varname):
+		self.abort(f"Set: Variable {varname} not declared", self.curToken.line)
 	self.emitter.emit(varname + ' = ')
 
 	vartype = self.variablesDeclared[varname]
@@ -165,18 +162,18 @@ def funcSET(self, TokenType):
 
 	# check if type is correct (excuse idents)
 	if self.curToken.kind != self.variablesDeclared[varname] and not self.checkToken(TokenType.IDENT):
-		self.abort('Set: Attempted to assign a ' + self.curToken.kind.name.lower() + ' to a variable declared with type ' + self.variablesDeclared[varname].name.lower() + f' ({self.curToken.text} to {varname})')
+		self.abort('Set: Attempted to assign a ' + self.curToken.kind.name.lower() + ' to a variable declared with type ' + self.variablesDeclared[varname].name.lower() + f' ({self.curToken.text} to {varname})', self.curToken.line)
 
 	# emit shit
 	if self.variablesDeclared[varname] == TokenType.STRING:
 		self.emitter.emit("\"" + self.curToken.text + "\";")
 		self.match(self.variablesDeclared[varname])
-		self.nextToken()
+		# self.nextToken()
 
 	elif self.variablesDeclared[varname] != TokenType.NUMBER:
 		self.emitter.emit(self.curToken.text + ';')
 		self.match(self.variablesDeclared[varname])
-		self.nextToken()
+		# self.nextToken()
 
 	# elif self.variablesDeclared[varname]
 
@@ -189,7 +186,7 @@ def funcSET(self, TokenType):
 		else:
 			self.emitter.emit(self.curToken.text + ';')
 			self.match(TokenType.NUMBER)
-			self.nextToken()
+			# self.nextToken()
 
 # "DECLARE" type ident = (expression | string | number)
 def funcDECLARE(self, TokenType):
@@ -285,7 +282,7 @@ def funcDECLARE(self, TokenType):
 		self.match(vartype)
 
 	#  Check if ident exists in symbol table. If not, declare it.
-	if varname not in self.variablesDeclared:
+	if not self.checkVar(varname):
 		### if self.emitter.override_emit_to_func:
 		###    self.variablesDeclared_in_function[varname] = varname in self.variablesDeclared
 		self.variablesDeclared[varname] = vartype
@@ -295,7 +292,7 @@ def funcDECLARE(self, TokenType):
 
 	# var already exists. abort
 	else:
-		self.abort(f"Declare: Variable '{varname}' is already declared.")
+		self.abort(f"Declare: Variable '{varname}' is already declared.", self.curToken.line)
 
 	# self.emitter.emitLine(";")
 	# self.nextToken()
@@ -308,8 +305,8 @@ def funcINPUT(self, TokenType):
 	varname = self.curToken.text
 
 	# check variable exists else abort
-	if varname not in self.variablesDeclared:
-		self.abort("Input: Attempted to assign input to undeclared variable " + varname)
+	if not self.checkVar(varname):
+		self.abort("Input: Attempted to assign input to undeclared variable " + varname, self.curToken.line)
 
 	vartype = self.variablesDeclared[varname]
 
@@ -366,7 +363,7 @@ def funcEXIT(self, TokenType):
 		self.emitter.emitLine("exit(" + self.curToken.text + ");")
 		self.nextToken()
 	else:
-		self.abort(f"Exit: Expected numeric exit code, not '{self.curToken.text}' ({self.curToken.kind.name})")
+		self.abort(f"Exit: Expected numeric exit code, not '{self.curToken.text}' ({self.curToken.kind.name})", self.curToken.line)
 
 # "FOR" (ident) "COMMA" (expression | number | ident) "COMMA" (expression | number | ident) "COMMA" (expression | number | ident) "DO" block "ENDFOR"
 def funcFOR(self, TokenType):
@@ -376,7 +373,7 @@ def funcFOR(self, TokenType):
 
 	self.match(TokenType.IDENT, False)
 	forvar = self.curToken.text
-	islocal = forvar in self.variablesDeclared
+	islocal = self.checkVar(forvar)
 	self.variablesDeclared[forvar] = TokenType.NUMBER
 	self.emitter.emit(self.curToken.text + '=')
 
@@ -412,7 +409,7 @@ def funcFOR(self, TokenType):
 				self.nextToken()
 
 		else:
-			self.abort(f"For: Expected number or expression, not not '{self.curToken.text}' ({self.curToken.kind.name})")
+			self.abort(f"For: Expected number or expression, not not '{self.curToken.text}' ({self.curToken.kind.name})", self.curToken.line)
 
 		if i < 2:
 			# print(self.curToken.text)
@@ -457,7 +454,7 @@ def funcSLEEP(self, TokenType):
 		self.emitter.emitLine("sleep(" + self.curToken.text + ");")
 		self.nextToken()
 	else:
-		self.abort(f"Sleep: Expected number or expression, not '{self.curToken.text}' ({self.curToken.kind.name})")
+		self.abort(f"Sleep: Expected number or expression, not '{self.curToken.text}' ({self.curToken.kind.name})", self.curToken.line)
 
 # "FUNC" ident ["TAKES" (idents)] "DOES" block "ENDFUNC"
 def funcFUNCTION(self, TokenType):
@@ -471,7 +468,7 @@ def funcFUNCTION(self, TokenType):
 
 	# Make sure this function doesn't already exist.
 	if self.curToken.text in self.functionsDeclared:
-		self.abort("Function: Function already exists: " + self.curToken.text)
+		self.abort("Function: Function already exists: " + self.curToken.text, self.curToken.line)
 
 	self.nextToken()
 	if self.checkToken(TokenType.TAKES):
@@ -506,7 +503,7 @@ def funcFUNCTION(self, TokenType):
 			# self.emitter.function()
 			self.emitter.function(vartoken.emittext + " " + self.curToken.text)
 
-			localargs.add((self.curToken.text, (self.curToken.text in self.variablesDeclared))) # append to list of local args and tell wether arg is also global or not
+			localargs.add((self.curToken.text, (self.checkVar(self.curToken.text)))) # append to list of local args and tell wether arg is also global or not
 			funcargs[self.curToken.text] = vartype
 			self.variablesDeclared[self.curToken.text] = vartype # temporarily append to defined args to avoid false errors
 
@@ -555,7 +552,7 @@ def funcCALL(self, TokenType):
 	self.nextToken()
 	self.match(TokenType.IDENT, False)
 	if not self.curToken.text in self.functionsDeclared.keys():
-		self.abort("Call: Calling function before declaration: " + self.curToken.text)
+		self.abort("Call: Calling function before declaration: " + self.curToken.text, self.curToken.line)
 
 	argsamount = len(list(self.functionsDeclared[self.curToken.text]))
 	funcname = self.curToken.text
@@ -568,7 +565,7 @@ def funcCALL(self, TokenType):
 		# localargs = {}
 
 		if not self.checkToken(TokenType.WITH):
-			self.abort(f"Call: Function '{funcname}' requires {argsamount} arguments")
+			self.abort(f"Call: Function '{funcname}' requires {argsamount} arguments", self.curToken.line)
 		
 		self.nextToken()
 		for i in range(argsamount):
@@ -583,20 +580,20 @@ def funcCALL(self, TokenType):
 				# given parameter is ident, check if correct datatype
 
 				# first check if var exists
-				if self.curToken.text not in self.variablesDeclared:
-					self.abort("Call: Variable \"" + self.curToken.text + "\" not defined")
+				if not self.checkVar(self.curToken.text):
+					self.abort("Call: Variable \"" + self.curToken.text + "\" not defined", self.curToken.line)
 
 
 				if not self.variablesDeclared[self.curToken.text] \
 					== self.functionsDeclared[funcname][argname]:
 					self.abort("Call: Parameter \""+argname+"\" needs to be of type " + \
-						self.functionsDeclared[funcname][argname])
+						self.functionsDeclared[funcname][argname], self.curToken.line)
 				else:
 					self.emitter.emit(self.curToken.text)
 			else:
 				# wrong parameter
 				self.abort("Call: Parameter \""+argname+"\" needs to be of type " + \
-						self.functionsDeclared[funcname][argname].name)
+						self.functionsDeclared[funcname][argname].name, self.curToken.line)
 
 			self.nextToken()
 
@@ -611,15 +608,15 @@ def funcCALL(self, TokenType):
 		self.emitter.emitLine(');')
 
 	if not self.checkToken(TokenType.NEWLINE):
-		self.abort(f"Call: Function '{funcname}' takes {argsamount} arguments")
+		self.abort(f"Call: Function '{funcname}' takes {argsamount} arguments", self.curToken.line)
 
 # "RETURN" (ident | number | string | bool | expression)
 def funcRETURN(self, TokenType):
-	self.abort("Return is not yet supported. Sorry!")
+	self.abort("Return is not yet supported. Sorry!", self.curToken.line)
 
 	# cannot return if not inside function
 	if not self.emitter.override_emit_to_func:
-		self.abort("Return: Cannot return outside of a function")
+		self.abort("Return: Cannot return outside of a function", self.curToken.line)
 
 
 	self.nextToken()
@@ -647,14 +644,14 @@ def funcRETURN(self, TokenType):
 		self.nextToken()
 
 	else:
-		self.abort(f"Return: Expected return value, not '{self.curToken.text}' ({self.curToken.kind.name})")
+		self.abort(f"Return: Expected return value, not '{self.curToken.text}' ({self.curToken.kind.name})", self.curToken.line)
 
 # "StartWith HINT IDENT, etc..
 def funcSTARTW(self, TokenType):
 	self.nextToken()
 
 	if not self.allowstartwith:
-		self.abort("StartWith: This syntax can only be used at the start of the script")
+		self.abort("StartWith: This syntax can only be used at the start of the script", self.curToken.line)
 
 	def handlevar(isfirst=False):
 		# emit type and varname to main parameters
@@ -699,7 +696,7 @@ def funcSTARTW(self, TokenType):
 		self.match(TokenType.COMMA)
 		handlevar()
 
-# "USE (IDENT | STRING)"
+# "USE" (IDENT | STRING)
 def funcUSE(self, TokenType):
 	self.nextToken()
 
@@ -708,7 +705,7 @@ def funcUSE(self, TokenType):
 	# either IDENT (script in cur. dir or in search path) or STRING (path)	
 	if self.checkToken(TokenType.IDENT):
 		if not os.path.exists(os.path.join(curdir, self.curToken.text+".tic")):
-			self.abort("Use: Script \""+self.curToken.text+"\" not found in current directory")
+			self.abort("Use: Script \""+self.curToken.text+"\" not found in current directory", self.curToken.line)
 		inclfile = os.path.join(curdir, self.curToken.text+".tic")
 	elif self.checkToken(TokenType.STRING):
 		if not self.curToken.text[0] == "/":
@@ -717,7 +714,7 @@ def funcUSE(self, TokenType):
 		else:
 			path = os.path.join(curdir, self.curToken.text+".tic")
 		if not os.path.exists(path):
-			self.abort("Use: Script \""+path+"\" not found")
+			self.abort("Use: Script \""+path+"\" not found", self.curToken.line)
 		inclfile = path
 
 	self.print("\nINCLUDING:")
@@ -805,4 +802,14 @@ def funcUSE(self, TokenType):
 
 	self.print("DONE INCLUDING\n")
 	self.include(headerfile, False)
+	self.nextToken()
+
+# "EMITC" (IDENT | STRING)
+def funcEMITC(self, TokenType):
+	self.nextToken()
+	self.used_emitc = True
+	if self.checkToken(TokenType.STRING):
+		self.emitter.emitLine(self.curToken.text)
+	else:
+		self.abort('EmitC: EmitC only takes a string, not \"'+self.curToken.text+"\"", self.curToken.line)
 	self.nextToken()

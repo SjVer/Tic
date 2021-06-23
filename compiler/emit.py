@@ -19,21 +19,22 @@ class Emitter:
 		self.mainargs = ""
 		self.code = ""
 
-	def emit(self, code):
-		if self.verbose:
-			print("EMIT"+(" FUNCTION" if self.override_emit_to_func else "")+": " + code)
+	def emit(self, code, silent=False):
+		if self.verbose and not silent:
+			print("EMIT"+(" FUNCTION" if self.override_emit_to_func else "")+": " + code.strip())
 		if self.override_emit_to_func:
-			self.functions += code + '\n'
+			self.functions += code
 		else:
-			self.code += code + '\n'
+			self.code += code
 
-	def emitLine(self, code):
-		if self.verbose:
-			print("EMIT"+(" FUNCTION" if self.override_emit_to_func else "")+": " + code)
-		if self.override_emit_to_func:
-			self.functions += code + '\n'
-		else:
-			self.code += code + '\n'
+	def emitLine(self, code, silent=False):
+		self.emit(code + '\n', silent)
+		# if self.verbose:
+			# print("EMIT"+(" FUNCTION" if self.override_emit_to_func else "")+": " + code)
+		# if self.override_emit_to_func:
+			# self.functions += code + '\n'
+		# else:
+			# self.code += code + '\n'
 
 	def headerLine(self, code):
 		if self.verbose:
@@ -114,6 +115,9 @@ class Emitter:
 		if not self.keep_c_file:
 			self.tempfile.write(code)
 			self.tempfile.seek(0)
+			text = subprocess.Popen(["clang-format", self.tempfile.name], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
+			self.tempfile.write(text)
+			self.tempfile.seek(0)
 
 		else:
 			with open(self.tempfile, 'w') as f:
@@ -126,5 +130,5 @@ class Emitter:
 
 		if self.verbose:
 			print('\n\ngenerated code:\n--------------------------\n')
-			os.system('clang-format ' + (self.tempfile.name if not self.keep_c_file else self.tempfile))        
+			os.system('highlight -O ansi --force ' + (self.tempfile.name if not self.keep_c_file else self.tempfile)+'')        
 			print('\n--------------------------\n\n')

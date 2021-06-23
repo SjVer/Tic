@@ -1,0 +1,191 @@
+%YAML 1.2
+
+---
+
+name: Tic
+file_extensions: [tic]
+fileTypes: [tic]
+scope: source.tic
+
+variables:
+  ident: '[A-Za-z_][A-Za-z_0-9]*'
+  hint: '{[A-Za-z_][A-Za-z_0-9]*}'
+
+contexts:
+  # The prototype context is prepended to all contexts but those setting
+  # meta_include_prototype: false.
+  prototype:
+    - include: comments
+
+  includes:
+    - include: keywords
+    - include: numbers
+    - include: strings
+    - include: hints
+    # - include: variables
+    - include: operators
+    - include: functions
+
+  main:
+    # The main context is the initial starting point of our syntax.
+    # Include other contexts from here (or specify them directly).
+    - include: includes
+
+    - match: '\b(true|false)\b'
+      scope: constant.numeric.example-c
+    - match: '\b{{ident}}\b'
+    - match: ','
+
+    - match: \S
+      scope: invalid
+
+  operators:
+    - match: (?:\+\+|--)
+      scope: keyword.operator.arithmetic.c
+    - match: '->'
+      scope: punctuation.accessor.c
+    #- match: \+\=|-\=|\*\=|/\=|%\=|&\=|\|\=|\^\=|>>\=|<<\=
+    #  scope: keyword.operator.assignment.augmented.c
+    - match: <<|>>|&&|\|\|
+      scope: keyword.operator.arithmetic.c
+    - match: <\=|>\=|\=\=|<|>|\!\=
+      scope: keyword.operator.comparison.c
+    - match: \+|\-|/|%|\||\^|~|!
+      scope: keyword.operator.arithmetic.c
+    # These two operator can be both arithmetic and pointer/address related
+    - match: \*|&
+      scope: keyword.operator.c
+    - match: \=
+      scope: keyword.operator.assignment.c
+
+  hints:
+    - match: \{
+      scope: variable.parameter # constant.character.escape.example-c #punctuation.definition.string.begin.example-c
+      push:
+      - meta_include_prototype: false
+      - match: '\b(number|bool|string)\b'
+        # scope: constant.character.escape.example-c
+        scope: variable.parameter
+        set:
+        - match: \}
+          scope: variable.parameter
+          pop: true
+      - match: \S
+        scope: invalid.illegal
+        push:
+        - match: \}
+          scope: variable.parameter
+
+  functions:
+    - match: 'Function'
+      # scope: entity.other.inherited-class
+      scope: entity.other.inherited-class
+      # set: [function_name, functions_block]
+      set: function_name
+
+    - match: 'Use'
+      scope: variable.function
+      set: use_name
+
+    - match: 'Call'
+      scope: entity.other.attribute-name
+      set: call
+
+    - match: '\b(Label|GoTo)\b'
+      scope: keyword
+      set: label
+
+    - match: '\b(Declare|Set|Input|Print|PrintLine|StartWith|Exit)\b'
+      scope: variable.function
+
+  function_name:
+    - meta_include_prototype: false
+    # - meta_scope: entity.other.inherited-class
+    - meta_scope: variable.function
+    - match: 'Does'
+      scope: entity.other.inherited-class
+      set: function_code
+    - match: 'Takes'
+      scope: entity.other.inherited-class
+      set: function_params
+
+  function_params:
+    - meta_include_prototype: false
+    - include: hints
+    - match: 'Does'
+      scope: entity.other.inherited-class
+      # pop: true
+      set: function_code
+
+  function_code:
+    - include: includes
+    - match: 'EndFunction'
+      scope: entity.other.inherited-class
+      pop: true
+
+  keywords:
+    - match: '\b(If|Then|Else|ElseIf|EndIf|
+      |For|Do|EndFor|While|Repeat|EndWhile|Or|And)\b'
+      scope: keyword.control.example-c
+
+  numbers:
+    - match: '\b(-)?[0-9.]+\b'
+      scope: constant.numeric.example-c
+
+  use_name:
+    - meta_include_prototype: false
+    - meta_scope: entity.other.attribute-name
+    - match: $\n?
+      pop: true
+
+  call:
+    - meta_include_prototype: false
+    - meta_scope: variable.function
+    # - meta_scope: entity.other.attribute-name
+    - match: 'With'
+      scope: entity.other.attribute-name
+      pop: true
+    - match: $\n?
+      scope: entity.other.attribute-name
+      pop: true
+
+  label:
+    - meta_include_prototype: false
+    - meta_scope: keyword
+    - match: $\n?
+      pop: true
+    # (?# - match: '. ')
+      # scope: invalid.illegal
+
+    - match: '#'
+      scope: punctuation.definition.comment.example-c
+      push:
+        # This is an anonymous context push for brevity.
+        - meta_scope: comment.line.double-slash.example-c
+        - match: $\n?
+          pop: true
+
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.example-c
+      push: inside_string
+
+  inside_string:
+    - meta_include_prototype: false
+    - meta_scope: string.quoted.double.example-c
+    # - match: '\\.'
+      # scope: constant.character.escape.example-c
+    - match: \\
+      scope: invalid.illegal
+    - match: '"'
+      scope: punctuation.definition.string.end.example-c
+      pop: true
+
+  comments:
+    - match: '#'
+      scope: punctuation.definition.comment.example-c
+      push:
+        # This is an anonymous context push for brevity.
+        - meta_scope: comment.line.double-slash.example-c
+        - match: $\n?
+          pop: true

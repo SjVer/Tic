@@ -73,6 +73,11 @@ Code examples can be found in the `test` directory.
 The IDE for Tic. TicIDE can be downloaded from the releases page. <br/>
 See `Editor.md` for more information.
 
+### Extra
+There is a sublime syntax file available for Tic as well (the Tic.sublime-syntax file). This is what it looks like:
+![Screenshot](SyntaxHighlights.png)
+Pretty neat, huh?
+
 ### Credits
 [Sjoerd Vermeulen](https://github.com/SjVer) (me) <br/>
 [This tutorial](http://web.eecs.utk.edu/~azh/blog/teenytinycompiler1.html) (really reccomend it!)

@@ -27,6 +27,7 @@ class Parser:
 
         self.headerfiles = set()
         self.allowstartwith = True
+        self.used_emitc = False
 
         self.curToken = None
         self.peekToken = None
@@ -51,16 +52,18 @@ class Parser:
     def match(self, kind, next = True):
         if not self.checkToken(kind):
             self.abort("Expected " + kind.name + ", got " + 
-            	self.curToken.kind.name + " ('" + self.curToken.text + "')")
+            	self.curToken.kind.name + " ('" + self.curToken.text + "')", self.curToken.line)
         if next:
             self.nextToken()
+
+    def checkVar(self, varname, kind = False):
+        if kind:
+            return varname in self.variablesDeclared and self.variablesDeclared[varname] == kind
+        return varname in self.variablesDeclared
 
     # Advances the current token.
     def nextToken(self, templexer = None, doprint=True):
         self.curToken = self.peekToken
-
-        if self.curToken != None and self.verbose and doprint:
-            print("TOKEN: "+self.curToken.kind.name)
 
         if templexer == None:
             self.peekToken = self.lexer.getToken()
@@ -81,9 +84,10 @@ class Parser:
             else:
                 self.emitter.includeLine(f"#include \"{header}\"")
 
-    def abort(self, message):
+    def abort(self, message, line=False):
         # raise ValueError("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
-        sys.exit("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
+        sys.exit("Parse Error: " + message + ((" (at line "+str(line)+")") if line else "")+\
+        "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
         # print('test')
 
     def print(self, message=""):
@@ -132,15 +136,17 @@ class Parser:
         for kind in TokenType:
             if self.checkToken(kind):
                 if kind.value.execute == None:
-                    self.abort("Invalid statement at '" + self.curToken.text + "' (" + self.curToken.kind.name + ")")
+                    self.abort("Invalid statement at '" + self.curToken.text + "' (" + self.curToken.kind.name + ")", self.curToken.line)
                 # found token
                 self.print("\nTOKEN: " + kind.name)
+                self.emitter.emitLine("// TOKEN: "+self.curToken.kind.name+ " Line: "+str(self.curToken.line), True)
+
                 kind.value.execute(self, TokenType)
                 break
 			
         # This is not a valid statement. Error!
         else:
-            self.abort("Invalid statement at '" + self.curToken.text + "' (" + self.curToken.kind.name + ")")
+            self.abort("Invalid statement: '" + self.curToken.text + "' (" + self.curToken.kind.name + ")", self.curToken.line)
             
         # Newline.
         self.nl()
@@ -148,8 +154,48 @@ class Parser:
     # comparison ::= expression (("==" | "!=" | ">" | ">=" | "<" | "<=") expression)+
     def comparison(self):
 
+        if self.checkToken(TokenType.STRING) or (self.checkToken(TokenType.IDENT) and \
+        self.variablesDeclared[self.curToken.text] == TokenType.STRING):
+            # comparison with string
+            self.include('string')
+            self.emitter.emit('(strcmp(')
+
+            # == comparison
+            if self.peekToken.kind in [TokenType.EQEQ,  TokenType.NOTEQ]:
+                eqeq = self.peekToken.kind == TokenType.EQEQ
+
+                # self.nextToken()
+                if self.checkToken(TokenType.STRING):
+                    self.emitter.emit("\""+self.curToken.text+"\"")
+                elif self.checkToken(TokenType.IDENT):
+                    self.emitter.emit(self.curToken.text)
+
+                self.emitter.emit(',')
+                self.nextToken() # the == or !=
+
+                self.nextToken()
+                if self.checkToken(TokenType.STRING):
+                    self.emitter.emit("\""+self.curToken.text+"\"")
+                elif self.checkToken(TokenType.IDENT):
+                    self.emitter.emit(self.curToken.text)
+                self.emitter.emit(')==0)' if eqeq else ')!=0)')
+                self.nextToken()
+
+            elif self.peekToken.kind in [TokenType.THEN, TokenType.OR, \
+            TokenType.AND, TokenType.REPEAT, TokenType.DO]:
+                # just check if string isnt empty
+                if self.checkToken(TokenType.STRING):
+                    self.emitter.emit("\""+self.curToken.text+"\"")
+                elif self.checkToken(TokenType.IDENT):
+                    self.emitter.emit(self.curToken.text)                
+                self.emitter.emit(",\"\")!=0)")
+                self.nextToken()
+
+            self.nextToken()
+
         # if the comparison is just a bool use it
-        if self.curToken.text in self.variablesDeclared and self.variablesDeclared [self.curToken.text] == TokenType.BOOL:
+        elif self.curToken.text in self.variablesDeclared and \
+        self.variablesDeclared [self.curToken.text] == TokenType.BOOL:
             self.emitter.emit(self.curToken.text)
             self.nextToken()
             if self.checkToken(TokenType.THEN):
@@ -225,7 +271,7 @@ class Parser:
             self.nextToken()        
         self.primary(in_func)
     
-    # primary ::= number | ident
+    # primary ::= number | ident | bool | string
     def primary(self, in_func=False):
         if self.checkToken(TokenType.NUMBER) or self.checkToken(TokenType.BOOL): 
             if in_func:
@@ -245,9 +291,13 @@ class Parser:
                 self.emitter.emit(self.curToken.text)
 
             self.nextToken()
+        # elif self.checkToken(TokenType.STRING):
+
+
+
         else:
             # Error!
-            self.abort("Unexpected token at '" + self.curToken.text + "'")
+            self.abort("Unexpected token at '" + self.curToken.text + "' (in primary)")
     
     # nl ::= '\n'+
     def nl(self):

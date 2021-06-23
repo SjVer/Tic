@@ -8,6 +8,8 @@ class Lexer:
         self.curPos = -1    		# Current position in the string.
         self.nextChar()
 
+        self.linecount = 1
+
         self.verbose = verbose
 	
     # Process the next character.
@@ -48,60 +50,61 @@ class Lexer:
         # Check the first character of this token to see if we can decide what it is.
         # If it is a multiple character operator (e.g., !=), number, identifier, or keyword then we will process the rest.
         if self.curChar == '+':
-            token = Token(self.curChar, TokenType.PLUS)
+            token = Token(self.curChar, TokenType.PLUS, self.linecount)
             
         elif self.curChar == '-':
-            token = Token(self.curChar, TokenType.MINUS)
+            token = Token(self.curChar, TokenType.MINUS, self.linecount)
             
         elif self.curChar == '*':
-            token = Token(self.curChar, TokenType.ASTERISK)
+            token = Token(self.curChar, TokenType.ASTERISK, self.linecount)
             
         elif self.curChar == '/':
-            token = Token(self.curChar, TokenType.SLASH)
+            token = Token(self.curChar, TokenType.SLASH, self.linecount)
             
         elif self.curChar == '\n':
-            token = Token(self.curChar, TokenType.NEWLINE)
+            token = Token(self.curChar, TokenType.NEWLINE, self.linecount)
+            self.linecount += 1
         
         elif self.curChar == ',':
-            token = Token(self.curChar, TokenType.COMMA)
+            token = Token(self.curChar, TokenType.COMMA, self.linecount)
 
         elif self.curChar == '\0':
-            token = Token('', TokenType.EOF)
+            token = Token('', TokenType.EOF, self.linecount)
             
         elif self.curChar == '=':
             # Check whether this token is = or ==
             if self.peek() == '=':
                 lastChar = self.curChar
                 self.nextChar()
-                token = Token(lastChar + self.curChar, TokenType.EQEQ)
+                token = Token(lastChar + self.curChar, TokenType.EQEQ, self.linecount)
             else:
-                token = Token(self.curChar, TokenType.EQ)
+                token = Token(self.curChar, TokenType.EQ, self.linecount)
                 
         elif self.curChar == '>':
             # Check whether this is token is > or >=
             if self.peek() == '=':
                 lastChar = self.curChar
                 self.nextChar()
-                token = Token(lastChar + self.curChar, TokenType.GTEQ)
+                token = Token(lastChar + self.curChar, TokenType.GTEQ, self.linecount)
             else:
-                token = Token(self.curChar, TokenType.GT)
+                token = Token(self.curChar, TokenType.GT, self.linecount)
                 
         elif self.curChar == '<':
                 # Check whether this is token is < or <=
                 if self.peek() == '=':
                     lastChar = self.curChar
                     self.nextChar()
-                    token = Token(lastChar + self.curChar, TokenType.LTEQ)
+                    token = Token(lastChar + self.curChar, TokenType.LTEQ, self.linecount)
                 else:
-                    token = Token(self.curChar, TokenType.LT)
+                    token = Token(self.curChar, TokenType.LT, self.linecount)
                     
         elif self.curChar == '!':
             if self.peek() == '=':
                 lastChar = self.curChar
                 self.nextChar()
-                token = Token(lastChar + self.curChar, TokenType.NOTEQ)
+                token = Token(lastChar + self.curChar, TokenType.NOTEQ, self.linecount)
             else:
-                self.abort("Expected !=, got !" + self.peek())
+                self.abort("Expected !=, got !" + self.peek() + " at line "+str(self.linecount))
                 
         elif self.curChar == '\"':
             # Get characters between quotations.
@@ -111,14 +114,13 @@ class Lexer:
             while self.curChar != '\"':
                 # Don't allow special characters in the string. No escape characters, newlines, tabs, or %.
                 # We will be using C's printf on this string.
-                #if self.curChar == '\r' or self.curChar == '\n' or self.curChar == '\t' or self.curChar == '\\' or self.curChar == '%':
-                #    self.abort("Illegal character in string: '" + self.curChar + "'")
+                if self.curChar == '\r' or self.curChar == '\n' or self.curChar == '\t' or self.curChar == '\\' or self.curChar == '%':
+                   self.abort("Illegal character in string: '" + self.curChar + "' at line "+str(self.linecount))
                 self.nextChar()
 
             tokText = self.source[startPos : self.curPos] # Get the substring.
 
-
-            token = Token(tokText, TokenType.STRING)
+            token = Token(tokText, TokenType.STRING, self.linecount)
 
         elif self.curChar == "{":
             # datatype
@@ -128,14 +130,14 @@ class Lexer:
             while self.curChar != "}":
                 self.nextChar()
                 if not self.curChar.isalpha() and not self.curChar == '}':
-                    self.abort("Illegal character in type hint.")
+                    self.abort("Illegal character in type hint at line "+str(self.linecount))
 
             tokText = self.source[startPos : self.curPos]
 
             if not DataTypes.checkIfDataType(tokText):
-                self.abort("Expected valid datatype, not \""+tokText+"\"")
+                self.abort("Expected valid datatype, not \""+tokText+"\" at line "+str(self.linecount))
 
-            token = Token(tokText, TokenType.HINT, DataTypes.getEmitText(tokText))
+            token = Token(tokText, TokenType.HINT, self.linecount, DataTypes.getEmitText(tokText))
             
         elif self.curChar.isdigit():
             # Leading character is a digit, so this must be a number.
@@ -154,13 +156,13 @@ class Lexer:
                     self.nextChar()
 
             tokText = self.source[startPos : self.curPos + 1] # Get the substring.
-            token = Token(tokText, TokenType.NUMBER)
+            token = Token(tokText, TokenType.NUMBER, self.linecount)
             
-        elif self.curChar.isalpha():
+        elif self.curChar.isalpha() or self.curChar == '_':
             # Leading character is a letter, so this must be an identifier or a keyword.
             # Get all consecutive alpha numeric characters.
             startPos = self.curPos
-            while self.peek().isalnum():
+            while self.peek().isalnum() or self.peek() == '_':
                 self.nextChar()
 
             # Check if the token is in the list of keywords.
@@ -168,15 +170,15 @@ class Lexer:
             keyword = Token.checkIfKeyword(tokText)
             if keyword == None: # Identifier
                 if tokText == 'true' or tokText == 'false':
-                    token = Token(tokText, TokenType.BOOL)
+                    token = Token(tokText, TokenType.BOOL, self.linecount)
                 else:
-                    token = Token(tokText, TokenType.IDENT)
+                    token = Token(tokText, TokenType.IDENT, self.linecount)
             else:   # Keyword
-                token = Token(tokText, keyword)
+                token = Token(tokText, keyword, self.linecount)
                 
         else:
             # Unknown token!
-            self.abort("Unknown token: '" + self.curChar + "'")
+            self.abort("Unknown token: '" + self.curChar + "' at line: "+str(self.linecount))
 			
         self.nextChar()
         if self.verbose:

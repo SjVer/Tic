@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-VERSION="1.2.1"
+VERSION="1.3.1"
 
 from lex import *
 from emit import *
@@ -41,9 +41,10 @@ def main(file, output, compiler, verbose, run, preserve_temp, generate_header):
             print("Generation of header file complete.")
         sys.exit(0)
 
+    if parser.used_emitc:
+            print("Warning! EmitC was used. The compilation might not succeed.")
     if verbose:
         print("Parsing complete.")
-
         print("Compiling file.") 
     # make sure dirs exist
     if not os.path.exists(os.path.dirname(output)):

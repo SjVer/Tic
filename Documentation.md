@@ -1,6 +1,6 @@
 # Tic Documentation
 All currently implemented features are documented here.
-Example scripts can be found in the 'test/' directory.
+Example scripts can be found in the 'test/' directory. Every syntax in the Tic language is used in at least one of those examples.
 <br/>
 <br/>
 ## Syntaxes
@@ -62,7 +62,7 @@ Set <variable> = <value>
 <br/>
 
 **If** <br/>
-Executes a block of code if the given comparison results to true. This comparison can contain `Or` and `And` statements as well. `Else` statements are also supported.
+Executes a block of code if the given comparison results to true. This comparison can contain `Or` and `And` statements as well. `Else` and `ElseIf` statements are also supported.
 ```
 If <comparison> Then
 	<code to execute>
@@ -75,6 +75,8 @@ Else
 EndIf
 
 If <comparison> Or <comparison> Then
+	<code to execute>
+ElseIf <comparison> Then
 	<code to execute>
 EndIf
 
@@ -92,7 +94,11 @@ See `If`
 See `If`
 <br/> <br/>
 
-**EndIF** <br/>
+**ElseIf** <br/>
+See `If`
+<br/> <br/>
+
+**EndIf** <br/>
 See `If`
 <br/> <br/>
 
@@ -194,6 +200,12 @@ Use "<scriptpath>"
 ```
 <br/>
 
+**EmitC** <br/>
+Adds a string of C code to the generated C code. I AM NOT RESPONSIBLE FOR COMPILE ERRORS AS A RESULT OF THIS.
+```
+EmitC "<string to emit>"
+```
+<br/>
 
 
 **Exit** <br/>

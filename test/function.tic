@@ -1,10 +1,12 @@
-# A simple function
+# An example script in Tic
 
 Function myfunc Does
 	PrintLine "myfunc called!"
 EndFunction
 
+Label MyLabel
 Call myfunc
+Exit 0
 
 Function mysecondfunc Takes
 	{number} x, {bool} y
@@ -18,11 +20,14 @@ Does
 	Else
 		PrintLine "y is false!"
 	EndIf
-
 EndFunction
 
-Declare {bool} mybool = true
-Declare mynum = 1
+Label START # the script will start here
+
+Declare mybool = true
+Declare {number} mynum
 Input mynum
 
 Call mysecondfunc With mynum, mybool
+GoTo MyLabel
+

@@ -1,0 +1,41 @@
+# This is a sample Tic project. Nothing fancy but enough to show off Tic's features
+Use funcs
+Declare {string} user_input
+
+Label Prompt
+PrintLine "What would you like to do? (Type help to see all options)"
+Print "> "
+Input user_input
+
+If user_input == "help" Then
+	PrintLine "These are the options you can choose:"
+	PrintLine "    add"
+	PrintLine "    subtract"
+	PrintLine "    multiply"
+	PrintLine "    divide"
+	PrintLine "    help"
+	PrintLine "    exit"
+
+ElseIf user_input == "exit" Then
+	PrintLine "Goodbye!"
+	Exit 0
+
+ElseIf user_input == "add" Then
+	Call add
+
+ElseIf user_input == "subtract" Then
+	Call subtract
+
+ElseIf user_input == "multiply" Then
+	Call multiply
+
+ElseIf user_input == "divide" Then
+	Call divide
+
+EndIf
+
+GoTo Prompt
+
+Label START
+PrintLine "Welcome to this calculator program written in Tic!"
+GoTo Prompt
