@@ -1,9 +1,6 @@
-import sys
+import sys, os
 from lex import *
 from copy import deepcopy
-
-# import funcs
-# from funcs import *
 
 # Parser object keeps track of current token and checks if the code matches the grammar.
 class Parser:
@@ -12,9 +9,6 @@ class Parser:
         self.emitter = emitter
         self.verbose = verbose
         self.generating_header = generating_header
-        # if self.generating_header:
-            # self.varDeclareValues = {} # include init value of declared vars for header
-        # self.curdir = curdir
 
         self.includes = set() # includes needed
         self.variablesDeclared = {} # Variables declared so far. key is name and value is type
@@ -24,6 +18,9 @@ class Parser:
 
         self.variablesDeclared_in_function = {} # will be temporarily filled with vars of function
                                                 # and emptied when the funcion is done parsing
+
+        self.parsing_function = False
+        self.curFuncVars = {}
 
         self.headerfiles = set()
         self.allowstartwith = True
@@ -57,7 +54,12 @@ class Parser:
             self.nextToken()
 
     def checkVar(self, varname, kind = False):
-        if kind:
+        if self.parsing_function:
+            if kind:
+                return varname in self.curFuncVars and self.curFuncVars[varname] == kind or \
+                varname in self.variablesDeclared and self.variablesDeclared[varname] == kind
+            return varname in self.curFuncVars or varname in self.variablesDeclared
+        elif kind:
             return varname in self.variablesDeclared and self.variablesDeclared[varname] == kind
         return varname in self.variablesDeclared
 
@@ -85,6 +87,9 @@ class Parser:
                 self.emitter.includeLine(f"#include \"{header}\"")
 
     def abort(self, message, line=False):
+        for file in self.headerfiles:
+            os.remove(file)
+
         # raise ValueError("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
         sys.exit("Parse Error: " + message + ((" (at line "+str(line)+")") if line else "")+\
         "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
@@ -138,7 +143,7 @@ class Parser:
                 if kind.value.execute == None:
                     self.abort("Invalid statement at '" + self.curToken.text + "' (" + self.curToken.kind.name + ")", self.curToken.line)
                 # found token
-                self.print("\nTOKEN: " + kind.name)
+                self.print("\nTOKEN: " + kind.name + " (line "+str(self.curToken.line)+")")
                 self.emitter.emitLine("// TOKEN: "+self.curToken.kind.name+ " Line: "+str(self.curToken.line), True)
 
                 kind.value.execute(self, TokenType)
@@ -155,7 +160,7 @@ class Parser:
     def comparison(self):
 
         if self.checkToken(TokenType.STRING) or (self.checkToken(TokenType.IDENT) and \
-        self.variablesDeclared[self.curToken.text] == TokenType.STRING):
+        self.checkVar(self.curToken.text, TokenType.STRING)):
             # comparison with string
             self.include('string')
             self.emitter.emit('(strcmp(')
@@ -194,8 +199,7 @@ class Parser:
             self.nextToken()
 
         # if the comparison is just a bool use it
-        elif self.curToken.text in self.variablesDeclared and \
-        self.variablesDeclared [self.curToken.text] == TokenType.BOOL:
+        elif self.checkVar(self.curToken.text, TokenType.BOOL):
             self.emitter.emit(self.curToken.text)
             self.nextToken()
             if self.checkToken(TokenType.THEN):
@@ -281,9 +285,9 @@ class Parser:
             self.nextToken()
         elif self.checkToken(TokenType.IDENT):
             # Ensure the variable already exists.
-            if self.curToken.text not in self.variablesDeclared:
+            if not self.checkVar(self.curToken.text):
                 self.abort("Referencing variable before declaration: " + self.curToken.text
-                    + (f"\nDeclared variables: {', '.join([k for k in self.variablesDeclared.keys()])}" if self.verbose else ''))
+                    + (f"\nDeclared variables: {', '.join([k for k in (self.variablesDeclared.keys() if not self.parsing_function else self.curFuncVars)])}" if self.verbose else ''))
 
             if in_func:
                 self.emitter.function(self.curToken.text)

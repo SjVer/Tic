@@ -14,6 +14,7 @@ class Emitter:
 		self.includes = ""
 		self.functions = ""
 		self.header = ""
+		self.pre_code = ""
 		self.maincall = ""
 		self.maincallargs = []
 		self.mainargs = ""
@@ -29,15 +30,9 @@ class Emitter:
 
 	def emitLine(self, code, silent=False):
 		self.emit(code + '\n', silent)
-		# if self.verbose:
-			# print("EMIT"+(" FUNCTION" if self.override_emit_to_func else "")+": " + code)
-		# if self.override_emit_to_func:
-			# self.functions += code + '\n'
-		# else:
-			# self.code += code + '\n'
 
-	def headerLine(self, code):
-		if self.verbose:
+	def headerLine(self, code, silent=False):
+		if self.verbose and not silent:
 			print("EMIT HEADER: " + code)
 		self.header += code + '\n'
 
@@ -61,6 +56,11 @@ class Emitter:
 			print("EMIT MAINCALL: " + code)
 		self.maincall += code + "\n"
 
+	def emitBeforeCode(self, code, silent=False):
+		if self.verbose and not silent:
+			print("EMIT PRE-CODE: "+code.strip())
+		self.pre_code += code
+
 	def function(self, code):
 		if self.verbose:
 			print("EMIT FUNCTION: " + code)
@@ -70,6 +70,7 @@ class Emitter:
 		code = self.includes + "\n\n" + self.header
 		code += "\n\n//funcs:\n\n" + self.functions
 		code += "\n\n//code:\n\nint MAIN("+(self.mainargs if self.mainargs != "" else "void")+"){\n"
+		code += self.pre_code + "\n"
 		code += ('goto START;' if self.specific_entry else '') + self.code + "\nreturn 0;\n}"
 		code += "\n\n//maincall:\n\nint main(int argc, char *argv[]){\n"
 		code += "if(argc-1 != "+str(len(self.maincallargs))+") {printf(\"Expected "

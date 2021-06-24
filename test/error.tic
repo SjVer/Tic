@@ -1,0 +1,7 @@
+# this script will throw an error at line 5
+
+Print "this works"
+PrintLine ", and this too"
+PrintLone "but this wont"
+
+Exit 0

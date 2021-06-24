@@ -38,8 +38,22 @@ class Lexer:
     # Skip comments in the code.
     def skipComment(self):
         if self.curChar == '#':
-            while self.curChar != '\n':
+
+            if self.peek() == '*':
                 self.nextChar()
+                self.nextChar()
+                # comment block
+                while self.curChar != "*" and self.peek() != '#':
+                    if self.curChar == '\n':
+                        self.linecount += 1
+                    # print(self.curChar)
+                    self.nextChar()
+                self.nextChar()
+                self.nextChar()
+
+            else:
+                while self.curChar != '\n':
+                    self.nextChar()
                  
     # Return the next token.
     def getToken(self):

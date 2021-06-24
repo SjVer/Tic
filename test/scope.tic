@@ -1,0 +1,30 @@
+Declare globalnum = 1
+#* variables declared outside a 
+function are accessible anywhere *#
+
+Function my_function Does
+	Declare localnum = 2
+	#* variables declared in a function 
+	are only accessible there *#
+	PrintLine localnum
+
+	Set globalnum = 3
+	PrintLine globalnum # works!
+EndFunction
+
+PrintLine globalnum
+# PrintLine localnum <- throws an error!
+
+Call my_function
+
+If true Then
+	Declare anotherglobalnum = 4
+EndIf
+
+PrintLine anotherglobalnum # works!
+
+# output:
+# 1
+# 2
+# 3
+# 4

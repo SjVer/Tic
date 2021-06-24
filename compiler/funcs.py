@@ -32,11 +32,11 @@ def funcPRINT(self, TokenType):
 			self.abort(f"Print: Attempted to print undeclared variable '{self.curToken.text}'", self.curToken.line)
 		
 		# detect variable type and emit based off that
-		if self.variablesDeclared[self.curToken.text] == TokenType.STRING:
+		if self.checkVar(self.curToken.text, TokenType.STRING):
 			# var contains string
 			self.emitter.emitLine("printf(\"%" + f"s\", {self.curToken.text});")
 
-		elif self.variablesDeclared[self.curToken.text] == TokenType.NUMBER:
+		elif self.checkVar(self.curToken.text, TokenType.NUMBER):
 			# var contains number
 			# the emitted code checks if number is int or float and prints accordingly
 			self.emitter.emitLine(f"if(roundf({self.curToken.text}) == {self.curToken.text})"+'{')
@@ -53,7 +53,7 @@ def funcPRINT(self, TokenType):
 			self.emitter.emitLine(i+"++;}")
 			self.emitter.emitLine("printf(\"%."+"*f\","+i+","+self.curToken.text+");}")
 
-		elif self.variablesDeclared[self.curToken.text] == TokenType.BOOL:
+		elif self.checkVar(self.curToken.text, TokenType.BOOL):
 			self.emitter.emitLine("printf(\"%" + f"s\", {self.curToken.text}?\"true\":\"false\");")
 		# self.emitter.emitLine("char *string = (char *)" + self.curToken.text + ";")
 		# self.emitter.emitLine("printf(\"%" + "s\", " + "string" + ");")
@@ -136,7 +136,7 @@ def funcLABEL(self, TokenType):
 		self.abort("Label: Label already exists: " + self.curToken.text, self.curToken.line)
 	self.labelsDeclared.add(self.curToken.text)
 
-	self.emitter.emitLine(self.curToken.text + ":")
+	self.emitter.emitLine(self.curToken.text + ": ;")
 	self.match(TokenType.IDENT)
 
 # "GOTO" ident
@@ -283,12 +283,19 @@ def funcDECLARE(self, TokenType):
 
 	#  Check if ident exists in symbol table. If not, declare it.
 	if not self.checkVar(varname):
-		### if self.emitter.override_emit_to_func:
-		###    self.variablesDeclared_in_function[varname] = varname in self.variablesDeclared
-		self.variablesDeclared[varname] = vartype
 
-		# self.emitter.emitLine(templine + ';')
-		self.emitter.headerLine(templine + ';')
+		if self.parsing_function:
+			self.curFuncVars[varname] = vartype
+			self.emitter.emitLine(templine + ';')
+		elif self.generating_header:
+			self.variablesDeclared[varname] = vartype
+			self.emitter.headerLine(templine + ';')
+		else:
+			self.variablesDeclared[varname] = vartype
+			self.emitter.emitLine("// DECLARATION OF \""+varname+"\"", True)
+			# self.emitter.emitBeforeCode(templine + ';\n')
+			self.emitter.headerLine(" // DECLARED AT LINE "+str(self.curToken.line)+':', True)
+			self.emitter.headerLine(templine + ';')
 
 	# var already exists. abort
 	else:
@@ -459,11 +466,14 @@ def funcSLEEP(self, TokenType):
 # "FUNC" ident ["TAKES" (idents)] "DOES" block "ENDFUNC"
 def funcFUNCTION(self, TokenType):
 	self.nextToken()
+
+	self.parsing_function = True
+	self.curFuncVars = {}
+
 	self.emitter.function('void ' + self.curToken.text + '(')
 	name = self.curToken.text
 
 	hasargs = False
-	localargs = set()
 	funcargs = {}
 
 	# Make sure this function doesn't already exist.
@@ -503,9 +513,8 @@ def funcFUNCTION(self, TokenType):
 			# self.emitter.function()
 			self.emitter.function(vartoken.emittext + " " + self.curToken.text)
 
-			localargs.add((self.curToken.text, (self.checkVar(self.curToken.text)))) # append to list of local args and tell wether arg is also global or not
+			self.curFuncVars[self.curToken.text] = vartype
 			funcargs[self.curToken.text] = vartype
-			self.variablesDeclared[self.curToken.text] = vartype # temporarily append to defined args to avoid false errors
 
 			self.nextToken()
 			# expect DOES (after newline if indented) or COMMA
@@ -536,16 +545,14 @@ def funcFUNCTION(self, TokenType):
 	self.emitter.function('}')
 
 	# remove local args from list of args if they dont already exist globally
-	if hasargs:
-		for arg in localargs:
-			if not arg[1]:
-				del self.variablesDeclared[arg[0]]
-	## remove locally declared variables if not in global scope
-	##  for var in self.variablesDeclared_in_function:
-	## 	 if not self.variablesDeclared_in_function[var]:
-	## 		del self.variablesDeclared[var]
-
+	# if hasargs:
+		# for arg in localargs:
+			# if not arg[1]:
+				# del self.variablesDeclared[arg[0]]
 	self.functionsDeclared[name] = funcargs
+
+	self.parsing_function = False
+	self.curFuncVars = {}
 
 # "CALL" ident ["WITH" ident ["COMMA" ident etc...]]
 def funcCALL(self, TokenType):

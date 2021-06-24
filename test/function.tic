@@ -26,6 +26,8 @@ Label START # the script will start here
 
 Declare mybool = true
 Declare {number} mynum
+
+Print "Enter a number: "
 Input mynum
 
 Call mysecondfunc With mynum, mybool
