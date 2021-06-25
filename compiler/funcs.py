@@ -96,6 +96,8 @@ def funcIF(self, TokenType, nested=False):
 	self.nl()
 	self.emitter.emitLine(")){")
 
+	scope = self.downScope()
+
 	# Zero or more statements in the body.
 	while not self.checkToken(TokenType.ENDIF):
 		self.statement()
@@ -109,6 +111,7 @@ def funcIF(self, TokenType, nested=False):
 
 	self.match(TokenType.ENDIF, not nested)
 	self.emitter.emitLine("}" if not nested else "")
+	self.upScope()
 
 # "WHILE" comparison "REPEAT" block "ENDWHILE"
 def funcWHILE(self, TokenType):
@@ -120,12 +123,25 @@ def funcWHILE(self, TokenType):
 	self.nl()
 	self.emitter.emitLine(")){")
 
+	self.downScope()
+
+	self.parsing_loop = True
 	# Zero or more statements in the loop body.
 	while not self.checkToken(TokenType.ENDWHILE):
 		self.statement()
 
 	self.match(TokenType.ENDWHILE)
+	self.parsing_loop = False
 	self.emitter.emitLine("}")
+	self.upScope()
+
+# "BREAK"
+def funcBREAK(self, TokenType):
+	if not self.parsing_loop:
+		self.abort('Break can only be used inside a For- or While-loop')
+	else:
+		self.emitter.emitLine('break;')
+	self.nextToken()
 
 # "LABEL" ident
 def funcLABEL(self, TokenType):
@@ -155,24 +171,24 @@ def funcSET(self, TokenType):
 		self.abort(f"Set: Variable {varname} not declared", self.curToken.line)
 	self.emitter.emit(varname + ' = ')
 
-	vartype = self.variablesDeclared[varname]
+	vartype = self.getVarType(varname)
 
 	self.nextToken()
 	self.match(TokenType.EQ)
 
 	# check if type is correct (excuse idents)
-	if self.curToken.kind != self.variablesDeclared[varname] and not self.checkToken(TokenType.IDENT):
-		self.abort('Set: Attempted to assign a ' + self.curToken.kind.name.lower() + ' to a variable declared with type ' + self.variablesDeclared[varname].name.lower() + f' ({self.curToken.text} to {varname})', self.curToken.line)
+	if self.curToken.kind != self.getVarType(varname) and not self.checkToken(TokenType.IDENT):
+		self.abort('Set: Attempted to assign a ' + self.curToken.kind.name.lower() + ' to a variable declared with type ' + self.getVarType(varname).name.lower() + f' ({self.curToken.text} to {varname})', self.curToken.line)
 
 	# emit shit
-	if self.variablesDeclared[varname] == TokenType.STRING:
+	if self.getVarType(varname) == TokenType.STRING:
 		self.emitter.emit("\"" + self.curToken.text + "\";")
-		self.match(self.variablesDeclared[varname])
+		self.match(self.getVarType(varname))
 		# self.nextToken()
 
-	elif self.variablesDeclared[varname] != TokenType.NUMBER:
+	elif self.getVarType(varname) != TokenType.NUMBER:
 		self.emitter.emit(self.curToken.text + ';')
-		self.match(self.variablesDeclared[varname])
+		self.match(self.getVarType(varname))
 		# self.nextToken()
 
 	# elif self.variablesDeclared[varname]
@@ -284,18 +300,20 @@ def funcDECLARE(self, TokenType):
 	#  Check if ident exists in symbol table. If not, declare it.
 	if not self.checkVar(varname):
 
-		if self.parsing_function:
-			self.curFuncVars[varname] = vartype
-			self.emitter.emitLine(templine + ';')
-		elif self.generating_header:
+		# if self.parsing_function:
+		# 	self.curFuncVars[varname] = vartype
+		# 	self.emitter.emitLine(templine + ';')
+		if self.generating_header:
 			self.variablesDeclared[varname] = vartype
 			self.emitter.headerLine(templine + ';')
 		else:
-			self.variablesDeclared[varname] = vartype
-			self.emitter.emitLine("// DECLARATION OF \""+varname+"\"", True)
-			# self.emitter.emitBeforeCode(templine + ';\n')
-			self.emitter.headerLine(" // DECLARED AT LINE "+str(self.curToken.line)+':', True)
-			self.emitter.headerLine(templine + ';')
+			# self.variablesDeclared[varname] = vartype
+			self.addVar(varname, vartype)
+			# self.emitter.emitLine("// DECLARATION OF \""+varname+"\"", True)
+			## self.emitter.emitBeforeCode(templine + ';\n')
+			# self.emitter.headerLine(" // DECLARED AT LINE "+str(self.curToken.line)+':', True)
+			# self.emitter.headerLine(templine + ';')
+			self.emitter.emitLine(templine + ';')
 
 	# var already exists. abort
 	else:
@@ -375,14 +393,24 @@ def funcEXIT(self, TokenType):
 # "FOR" (ident) "COMMA" (expression | number | ident) "COMMA" (expression | number | ident) "COMMA" (expression | number | ident) "DO" block "ENDFOR"
 def funcFOR(self, TokenType):
 
-	self.emitter.emit('for(int ')
+	self.emitter.emit('for(')
 	self.nextToken()
 
 	self.match(TokenType.IDENT, False)
 	forvar = self.curToken.text
-	islocal = self.checkVar(forvar)
-	self.variablesDeclared[forvar] = TokenType.NUMBER
-	self.emitter.emit(self.curToken.text + '=')
+	isnewforvar = True
+
+	self.downScope()
+
+	if not self.checkVar(forvar):
+		self.addVar(forvar, TokenType.NUMBER)
+		isnewforvar = True
+	elif self.checkVar(forvar, TokenType.NUMBER):
+		isnewforvar = False
+	else:
+		self.abort('For: Variable \"'+forvar+"\" is already declared and not of type NUMBER")
+
+	self.emitter.emit(("int " if isnewforvar else "") + forvar + '=')
 
 	self.nextToken()
 	self.match(TokenType.COMMA, False)
@@ -393,12 +421,9 @@ def funcFOR(self, TokenType):
 		if self.checkToken(TokenType.NUMBER):
 			if not self.checkPeek(TokenType.COMMA):
 				# expression
-				# print("expression: ", self.curToken.text, ' and ', self.peekToken.text)
 				self.expression()
-				# print('expression done. currtoken: ', self.curToken.text)
 			else:
 				# number
-				# print("number: ", self.curToken.text, ' and ', self.peekToken.text)
 				self.emitter.emit(self.curToken.text)
 				self.nextToken()
 
@@ -406,12 +431,9 @@ def funcFOR(self, TokenType):
 			# ident
 			if not self.checkPeek(TokenType.COMMA):
 				# expression
-				# print("expression: ", self.curToken.text, ' and ', self.peekToken.text)
 				self.expression()
-				# print('expression done. currtoken: ', self.curToken.text)
 			else:
 				# ident
-				# print("ident: ", self.curToken.text, ' and ', self.peekToken.text)
 				self.emitter.emit(self.curToken.text)
 				self.nextToken()
 
@@ -419,8 +441,6 @@ def funcFOR(self, TokenType):
 			self.abort(f"For: Expected number or expression, not not '{self.curToken.text}' ({self.curToken.kind.name})", self.curToken.line)
 
 		if i < 2:
-			# print(self.curToken.text)
-			
 			self.match(TokenType.COMMA, False)
 			if i == 0:
 				self.emitter.emit(';' + forvar + '<=')
@@ -431,14 +451,15 @@ def funcFOR(self, TokenType):
 			self.nl()
 			self.emitter.emitLine("){")
 
+	self.parsing_loop = True
 	# Zero or more statements in the loop body.
 	while not self.checkToken(TokenType.ENDFOR):
 		self.statement()
 
 	self.match(TokenType.ENDFOR)
+	self.parsing_loop = False
 	self.emitter.emitLine("}")
-	if islocal:
-		self.variablesDeclared.remove(forvar)
+	self.upScope()
 		
 # "SLEEP" (expression | number | ident)
 def funcSLEEP(self, TokenType):
@@ -467,10 +488,12 @@ def funcSLEEP(self, TokenType):
 def funcFUNCTION(self, TokenType):
 	self.nextToken()
 
-	self.parsing_function = True
-	self.curFuncVars = {}
+	# self.parsing_function = True
+	# self.curFuncVars = {}
+	funcscope = self.downScope()
 
-	self.emitter.function('void ' + self.curToken.text + '(')
+	# self.emitter.function('void ' + self.curToken.text + '(')
+	self.emitter.emit('void ' + self.curToken.text + '(')
 	name = self.curToken.text
 
 	hasargs = False
@@ -508,41 +531,47 @@ def funcFUNCTION(self, TokenType):
 			self.nextToken()
 			self.match(TokenType.IDENT, False)
 
-			# print("varname: " + self.curToken.text + " type: " + vartype.name)
-			# print(self.curToken.emittext)
-			# self.emitter.function()
-			self.emitter.function(vartoken.emittext + " " + self.curToken.text)
+			## print("varname: " + self.curToken.text + " type: " + vartype.name)
+			## print(self.curToken.emittext)
+			## self.emitter.function()
+			# self.emitter.function(vartoken.emittext + " " + self.curToken.text)
+			self.emitter.emit(vartoken.emittext + " " + self.curToken.text)
 
-			self.curFuncVars[self.curToken.text] = vartype
+			# self.curFuncVars[self.curToken.text] = vartype
+			self.addVar(self.curToken.text, vartype)
 			funcargs[self.curToken.text] = vartype
 
 			self.nextToken()
 			# expect DOES (after newline if indented) or COMMA
 			if self.checkToken(TokenType.COMMA):
-				self.emitter.function(',')
+				# self.emitter.function(',')
+				self.emitter.emit(',')
 				self.nextToken()
 			elif indented_takes:
 				self.match(TokenType.NEWLINE)
 				# self.match(TokenType.NEWLINE):
-				self.emitter.function('){\n')
+				# self.emitter.function('){\n')
+				self.emitter.emit('){\n')
 			else:
-				self.emitter.function('){\n')
+				# self.emitter.function('){\n')
+				self.emitter.emit('){\n')
 
 	else:
 		# no vars
-		self.emitter.function('void) {\n')
+		# self.emitter.function('void) {\n')
+		self.emitter.emit('void) {\n')
 
 	self.match(TokenType.DOES)
 	self.nl()
 	# Zero or more statements in the function body.
-	self.emitter.override_emit_to_func = True
+	# self.emitter.override_emit_to_func = True
 	while not self.checkToken(TokenType.ENDFUNC):
 		self.statement()
-	self.emitter.override_emit_to_func = False
-	self.variablesDeclared_in_function = {}
+	# self.emitter.override_emit_to_func = False
 
 	self.match(TokenType.ENDFUNC)
-	self.emitter.function('}')
+	# self.emitter.function('}')
+	self.emitter.emitLine('} // END OF FUNCTION '+name)
 
 	# remove local args from list of args if they dont already exist globally
 	# if hasargs:
@@ -551,8 +580,9 @@ def funcFUNCTION(self, TokenType):
 				# del self.variablesDeclared[arg[0]]
 	self.functionsDeclared[name] = funcargs
 
-	self.parsing_function = False
-	self.curFuncVars = {}
+	self.upScope()
+	# self.parsing_function = False
+	# self.curFuncVars = {}
 
 # "CALL" ident ["WITH" ident ["COMMA" ident etc...]]
 def funcCALL(self, TokenType):
@@ -591,8 +621,9 @@ def funcCALL(self, TokenType):
 					self.abort("Call: Variable \"" + self.curToken.text + "\" not defined", self.curToken.line)
 
 
-				if not self.variablesDeclared[self.curToken.text] \
-					== self.functionsDeclared[funcname][argname]:
+				# if not self.variablesDeclared[self.curToken.text] \
+					# == self.functionsDeclared[funcname][argname]:
+				if not self.checkVar(self.curToken.text, self.functionsDeclared[funcname][argname]):
 					self.abort("Call: Parameter \""+argname+"\" needs to be of type " + \
 						self.functionsDeclared[funcname][argname], self.curToken.line)
 				else:
@@ -677,7 +708,8 @@ def funcSTARTW(self, TokenType):
 		self.match(TokenType.HINT)
 		self.emitter.emitMainArg(self.curToken.text)
 		self.emitter.maincallargs.append(self.curToken.text)
-		self.variablesDeclared[self.curToken.text] = vartype
+		# self.variablesDeclared[self.curToken.text] = vartype
+		self.addVar(self.curToken.text, vartype)
 
 		self.emitter.emitMainCall(self.curToken.text)
 		varname = self.curToken.text
@@ -784,7 +816,8 @@ def funcUSE(self, TokenType):
 				self.print("    NAME: "+varname)
 				vartype = eval("TokenType."+line.split('{')[1].split('}')[0])
 				self.print("    TYPE: "+str(vartype))
-				self.variablesDeclared[varname] = vartype
+				# self.variablesDeclared[varname] = vartype
+				self.addVar(varname, vartype)
 
 			# includedef
 			elif line.startswith("// INCL"):

@@ -91,6 +91,7 @@ class TokenType(enum.Enum):
     ENDIF   = TokenTypeItem(Types.KEYWORD, 'EndIf')
     WHILE   = TokenTypeItem(Types.KEYWORD, 'While',     func=funcWHILE)
     REPEAT  = TokenTypeItem(Types.KEYWORD, 'Repeat')
+    BREAK   = TokenTypeItem(Types.KEYWORD, 'Break',     func=funcBREAK)
     ENDWHILE= TokenTypeItem(Types.KEYWORD, 'EndWhile')
     FOR     = TokenTypeItem(Types.KEYWORD, 'For',       func=funcFOR)
     DO      = TokenTypeItem(Types.KEYWORD, 'Do')

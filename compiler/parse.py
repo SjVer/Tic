@@ -2,6 +2,10 @@ import sys, os
 from lex import *
 from copy import deepcopy
 
+class Scope:
+    def __init__(self, variables: dict = {}):
+        self.variablesDeclared = variables
+
 # Parser object keeps track of current token and checks if the code matches the grammar.
 class Parser:
     def __init__(self, lexer, emitter, verbose, generating_header):
@@ -11,18 +15,20 @@ class Parser:
         self.generating_header = generating_header
 
         self.includes = set() # includes needed
+        self.headerfiles = set()
+
         self.variablesDeclared = {} # Variables declared so far. key is name and value is type
+
         self.labelsDeclared = set() # Labels declared so far.
         self.labelsGotoed = set()   # Labels goto'ed so far.
-        self.functionsDeclared = {} # key is name and value is amount of args
 
-        self.variablesDeclared_in_function = {} # will be temporarily filled with vars of function
-                                                # and emptied when the funcion is done parsing
+        self.functionsDeclared = {} # key is name and value is amount of args and their types
 
-        self.parsing_function = False
-        self.curFuncVars = {}
+        self.parsing_loop = False
 
-        self.headerfiles = set()
+        self.scopes = []
+        self.curscope = None
+
         self.allowstartwith = True
         self.used_emitc = False
 
@@ -31,40 +37,75 @@ class Parser:
 
         self.includes.add('stdio')
         self.emitter.includes += '#include <stdio.h>\n'
-
         self.nextToken(doprint=False)
         self.nextToken(doprint=False)    # Call this twice to initialize current and peek.
 
     # Return true if the current token matches.
-    def checkToken(self, kind):
+    def checkToken(self, kind) -> bool:
         #
         return kind == self.curToken.kind
 
     # Return true if the next token matches.
-    def checkPeek(self, kind):
+    def checkPeek(self, kind) -> bool:
         #
         return kind == self.peekToken.kind
 
     # Try to match current token. If not, error. Advances the current token.
-    def match(self, kind, next = True):
+    def match(self, kind, next = True) -> None:
         if not self.checkToken(kind):
             self.abort("Expected " + kind.name + ", got " + 
             	self.curToken.kind.name + " ('" + self.curToken.text + "')", self.curToken.line)
         if next:
             self.nextToken()
 
-    def checkVar(self, varname, kind = False):
-        if self.parsing_function:
-            if kind:
-                return varname in self.curFuncVars and self.curFuncVars[varname] == kind or \
-                varname in self.variablesDeclared and self.variablesDeclared[varname] == kind
-            return varname in self.curFuncVars or varname in self.variablesDeclared
-        elif kind:
-            return varname in self.variablesDeclared and self.variablesDeclared[varname] == kind
-        return varname in self.variablesDeclared
+    # Check if var exists in correct scope (and if of correct type if kind is given)
+    def checkVar(self, varname, kind = False) -> bool:
+        # if self.parsing_function:
+        #     if kind:
+        #         return varname in self.curFuncVars and self.curFuncVars[varname] == kind or \
+        #         varname in self.variablesDeclared and self.variablesDeclared[varname] == kind
+        #     return varname in self.curFuncVars or varname in self.variablesDeclared
+        # elif kind:
+        if kind:
+            return varname in (self.curscope.variablesDeclared if self.curscope else self.variablesDeclared) \
+            and (self.curscope.variablesDeclared[varname] if self.curscope else self.variablesDeclared[varname]) == kind
+        return varname in (self.curscope.variablesDeclared if self.curscope else self.variablesDeclared)
+        # return varname in self.variablesDeclared
+
+    # Adds a variable to the current scope
+    def addVar(self, varname, kind) -> None:
+        if self.curscope:
+            self.curscope.variablesDeclared[varname] = kind
+        else:
+            self.variablesDeclared[varname] = kind
+
+    # gets type of var
+    def getVarType(self, varname):
+        if not self.checkVar(varname):
+            raise ValueError(varname + ' does not exist so cant get type')
+        if self.curscope:
+            return self.curscope.variablesDeclared[varname]
+        return self.variablesDeclared[varname]
+
+    # Creates a scope that inherits all variables from current scope
+    def createChildScope(self) -> Scope:
+        return Scope((self.curscope.variablesDeclared.copy() if self.curscope \
+            else self.variablesDeclared.copy()))
+
+    # goes down a new scope
+    def downScope(self) -> None:
+        scope = self.createChildScope()
+        self.scopes.append(scope)
+        self.curscope = self.scopes[-1]
+        return scope      
+
+    # Goes back up one scope
+    def upScope(self) -> None:
+        self.scopes.pop()
+        self.curscope = self.scopes[-1] if len(self.scopes) != 0 else None
 
     # Advances the current token.
-    def nextToken(self, templexer = None, doprint=True):
+    def nextToken(self, templexer = None, doprint=True) -> None:
         self.curToken = self.peekToken
 
         if templexer == None:
@@ -78,7 +119,8 @@ class Parser:
         else:
             self.peekToken = templexer.getToken()
 
-    def include(self, header, inlib=True):
+    # Adds a header to the included headers if it isn't already included
+    def include(self, header, inlib=True) -> None:
         if not header in self.includes:
             self.includes.add(header)
             if inlib:
@@ -86,7 +128,8 @@ class Parser:
             else:
                 self.emitter.includeLine(f"#include \"{header}\"")
 
-    def abort(self, message, line=False):
+    # Aborts with message n shit
+    def abort(self, message, line=False) -> None:
         for file in self.headerfiles:
             os.remove(file)
 
@@ -95,12 +138,13 @@ class Parser:
         "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
         # print('test')
 
-    def print(self, message=""):
+    # prints only if verbose
+    def print(self, message="") -> None:
         if self.verbose:
             print(message)
 
     # gets current expression as string
-    def get_current_expression(self, save_pos=False):
+    def get_current_expression(self, save_pos=False) -> str:
         oldcur, oldpeek = self.curToken, self.peekToken
         express = ''
         templexer = deepcopy(self.lexer)
@@ -114,7 +158,7 @@ class Parser:
     # parsing
 
     # program ::= {statement}
-    def program(self):
+    def program(self) -> None:
         
         # Since some newlines are required in our grammar, need to skip the excess.
         while self.checkToken(TokenType.NEWLINE):
@@ -135,7 +179,7 @@ class Parser:
             self.emitter.specific_entry = True
 
     # One of the following statements...
-    def statement(self):
+    def statement(self) -> None:
         # Check the first token to see what kind of statement this is.
         
         for kind in TokenType:
@@ -157,7 +201,7 @@ class Parser:
         self.nl()
     
     # comparison ::= expression (("==" | "!=" | ">" | ">=" | "<" | "<=") expression)+
-    def comparison(self):
+    def comparison(self) -> None:
 
         if self.checkToken(TokenType.STRING) or (self.checkToken(TokenType.IDENT) and \
         self.checkVar(self.curToken.text, TokenType.STRING)):
@@ -240,7 +284,7 @@ class Parser:
                 break
     
     # expression ::= term {( "-" | "+" ) term}
-    def expression(self, in_func=False):
+    def expression(self, in_func=False) -> None:
         self.term(in_func)
         # Can have 0 or more +/- and expressions.
         while self.checkToken(TokenType.PLUS) or self.checkToken(TokenType.MINUS):
@@ -252,7 +296,7 @@ class Parser:
             self.term(in_func)
 
     # term ::= unary {( "/" | "*" ) unary}
-    def term(self, in_func=False):
+    def term(self, in_func=False) -> None:
         self.unary(in_func)
         # Can have 0 or more *// and expressions.
         while self.checkToken(TokenType.ASTERISK) or self.checkToken(TokenType.SLASH):
@@ -265,7 +309,7 @@ class Parser:
             self.unary(in_func)
 
     # unary ::= ["+" | "-"] primary
-    def unary(self, in_func=False):
+    def unary(self, in_func=False) -> None:
         # Optional unary +/-
         if self.checkToken(TokenType.PLUS) or self.checkToken(TokenType.MINUS):
             if in_func:
@@ -276,7 +320,7 @@ class Parser:
         self.primary(in_func)
     
     # primary ::= number | ident | bool | string
-    def primary(self, in_func=False):
+    def primary(self, in_func=False) -> None:
         if self.checkToken(TokenType.NUMBER) or self.checkToken(TokenType.BOOL): 
             if in_func:
                 self.emitter.function(self.curToken.text)
@@ -304,7 +348,7 @@ class Parser:
             self.abort("Unexpected token at '" + self.curToken.text + "' (in primary)")
     
     # nl ::= '\n'+
-    def nl(self):
+    def nl(self) -> None:
         # Require at least one newline.
         self.match(TokenType.NEWLINE)
         # But we will allow extra newlines too, of course.
@@ -312,7 +356,7 @@ class Parser:
             self.nextToken()
             
     # Return true if the current token is a comparison operator.
-    def isComparisonOperator(self):
+    def isComparisonOperator(self) -> bool:
         return (self.checkToken(TokenType.GT) or
             self.checkToken(TokenType.GTEQ) or
             self.checkToken(TokenType.LT) or

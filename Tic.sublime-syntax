@@ -95,7 +95,7 @@ contexts:
       scope: keyword
       set: label
 
-    - match: '\b(Declare|Set|Input|Print|PrintLine|StartWith|Exit)\b'
+    - match: '\b(Declare|Set|Input|Print|PrintLine|StartWith|Exit|Break)\b'
       scope: variable.function
 
   function_name:
@@ -182,6 +182,13 @@ contexts:
       pop: true
 
   comments:
+    - match: '#\*'
+      scope: punctuation.definition.comment.example-c
+      push:
+        - meta_scope: comment.line.double-slash.example-c
+        - match: '\*#'
+          pop: true
+
     - match: '#'
       scope: punctuation.definition.comment.example-c
       push:

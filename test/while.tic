@@ -1,0 +1,20 @@
+# an example of the While loop
+
+Declare {number} x = 0
+
+While x <= 10 Repeat
+	Set x = x + 1
+
+	If x == 6 Then
+		Break
+	EndIf
+
+	PrintLine x
+EndWhile
+
+# output:
+# 1
+# 2
+# 3
+# 4
+# 5

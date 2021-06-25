@@ -1,6 +1,6 @@
 Declare globalnum = 1
-#* variables declared outside a 
-function are accessible anywhere *#
+#* variables declared can only be accessed in their
+scope and all subscopes *#
 
 Function my_function Does
 	Declare localnum = 2
@@ -18,13 +18,17 @@ PrintLine globalnum
 Call my_function
 
 If true Then
-	Declare anotherglobalnum = 4
+	Declare anotherlocalnum = 4
+	PrintLine anotherlocalnum
 EndIf
 
-PrintLine anotherglobalnum # works!
+Set globalnum = 5
+PrintLine globalnum
+# PrintLine anotherglobalnum <- doesnt work!
 
 # output:
 # 1
 # 2
 # 3
 # 4
+# 5
