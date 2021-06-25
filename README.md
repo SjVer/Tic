@@ -3,7 +3,7 @@ An attempt at making a simple programming language.
 <br/>
 
 ### What is Tic really?
-First things first; Tic is a recreational project. I am working on this programming language for nothing but fun, and thus it is unfair to compare it with other languages. Other than that Tic is a transpiled language. It is typed and handles this in a way very similar to C. Another thing to note is that there's not much scoping action. Functions have their own scopes but that's it. When a variable is declared it can be used for the rest of the script. Any wrong code will probably be detected by the transpiler itself but on some rare occasion the assigned c compiler will be the one catching it. Lastly, both the transpiler and IDE included in this project are being written on a Linux device. I honestly cannot guarantee that it'll work on anything else. The compiling part probably won't.
+First things first; Tic is a recreational project. I am working on this programming language for nothing but fun, and thus it is unfair to compare it with other languages. Other than that Tic is a transpiled language. It is typed and handles this in a way very similar to C. Another thing to note is that scopes are a thing similarily to in most languages. Any wrong code will probably be detected by the transpiler itself but on some rare occasion the assigned c compiler will be the one catching it. Lastly, both the transpiler and IDE included in this project are being written on a Linux device. I honestly cannot guarantee that it'll work on anything else. The compiling part probably won't.
 
 
 ### Why Tic?

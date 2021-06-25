@@ -115,6 +115,10 @@ EndWhile
 See `While`
 <br/> <br/>
 
+**Break** <br/>
+Used to break out of For- and While-loops.
+<br/> <br/>
+
 **EndWhile** <br/>
 See `While`
 <br/> <br/>

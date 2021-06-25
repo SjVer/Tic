@@ -1,12 +1,12 @@
 [DEBREATE-0.7.13]
 <<CTRL>>
 Package: ticcomp
-Version: 1.2
+Version: 1.4
 Maintainer: Sjoerd Vermeulen <sjoerd@marsenaar.com>
 Section: interpreters
 Architecture: all
 Priority: optional
-Depends: python3
+Depends: python3, clang-format, highlight
 Recommends: gcc
 Description: Compiler for AttemptLang
  This is the compiler for Tic. See https://github.com/SjVer/Tic for more information.
@@ -15,11 +15,11 @@ Description: Compiler for AttemptLang
 <<FILES>>
 1
 /home/sjoerd/Tic/compiler/ticcomp* -> ticcomp -> /usr/bin
-/home/sjoerd/Tic/compiler/tokens.py -> tokens.py -> /usr/bin
-/home/sjoerd/Tic/compiler/parse.py -> parse.py -> /usr/bin
-/home/sjoerd/Tic/compiler/lex.py -> lex.py -> /usr/bin
-/home/sjoerd/Tic/compiler/funcs.py -> funcs.py -> /usr/bin
-/home/sjoerd/Tic/compiler/emit.py -> emit.py -> /usr/bin
+/home/sjoerd/Tic/compiler/tic_parse.py -> tic_parse.py -> /usr/bin
+/home/sjoerd/Tic/compiler/tic_funcs.py -> tic_funcs.py -> /usr/bin
+/home/sjoerd/Tic/compiler/tic_tokens.py -> tic_tokens.py -> /usr/bin
+/home/sjoerd/Tic/compiler/tic_lex.py -> tic_lex.py -> /usr/bin
+/home/sjoerd/Tic/compiler/tic_emit.py -> tic_emit.py -> /usr/bin
 <</FILES>>
 <<SCRIPTS>>
 <<PREINST>>
