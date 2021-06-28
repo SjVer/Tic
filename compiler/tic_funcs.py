@@ -1,9 +1,6 @@
-import sys
-import os
-from lex import *
-import random
-import string
-import tempfile
+from tic_lex import *
+import random, string, tempfile, sys, os
+from termcolor import colored
 # from tokens import DataTypes
 
 def randStr(N):
@@ -24,7 +21,7 @@ def funcPRINT(self, TokenType):
 		self.emitter.emitLine("printf(\"" + self.curToken.text + "\\n\");")
 		self.nextToken()
 
-	elif self.checkToken(TokenType.IDENT) and (self.checkPeek(TokenType.NEWLINE) or self.checkPeek(TokenType.EOF)):
+	elif self.checkToken(TokenType.IDENT) and not self.atExpression():
 		# ident
 		
 		# check if defined
@@ -59,7 +56,7 @@ def funcPRINT(self, TokenType):
 		# self.emitter.emitLine("printf(\"%" + "s\", " + "string" + ");")
 		self.nextToken()
 
-	else:
+	elif self.atExpression():
 		# Expect an expression and print the result as a float.
 		# self.emitter.emit("printf(\"%" + ".3f\", (float)(")
 		tempvar = randStr(10)
@@ -80,6 +77,9 @@ def funcPRINT(self, TokenType):
 		self.emitter.emitLine("break;")
 		self.emitter.emitLine(i+"++;}")
 		self.emitter.emitLine("printf(\"%."+"*f\","+i+","+tempvar+");}")
+
+	else:
+		self.abort('Print: Unexpected value of type '+self.curToken.kind.name+' ("'+self.curToken.text+'")')
 
 # "PRINTLN" (expression | string)
 def funcPRINTLN(self, TokenType):
@@ -195,7 +195,7 @@ def funcSET(self, TokenType):
 
 	else:
 		# can be either number or expression
-		if not self.checkPeek(TokenType.NEWLINE) and not self.checkPeek(TokenType.EOF):
+		if self.atExpression():
 			# expression
 			self.expression()
 			self.emitter.emit(';')
@@ -277,12 +277,12 @@ def funcDECLARE(self, TokenType):
 				
 		else:
 			# vartype = TokenType.NUMBER
-			if not self.checkPeek(TokenType.NEWLINE) and not self.checkPeek(TokenType.EOF):
+			if self.atExpression():
 				# expression
 				if not ishinted:
 					templine = "float " + templine
 					vartype = TokenType.NUMBER
-				templine += self.get_current_expression(True)
+				templine += self.get_current_expression()
 				##  self.expression()
 			else:
 				# number
@@ -333,7 +333,7 @@ def funcINPUT(self, TokenType):
 	if not self.checkVar(varname):
 		self.abort("Input: Attempted to assign input to undeclared variable " + varname, self.curToken.line)
 
-	vartype = self.variablesDeclared[varname]
+	vartype = self.getVarType(varname)
 
 	# generate the right scanf format for each data type
 	if vartype == TokenType.NUMBER:
@@ -372,7 +372,7 @@ def funcEXIT(self, TokenType):
 	self.nextToken()
 	
 	if self.checkToken(TokenType.NUMBER):
-		if not self.checkPeek(TokenType.NEWLINE) and not self.checkPeek(TokenType.EOF):
+		if self.atExpression():
 			# expression
 			self.emitter.emit("exit(")
 			self.expression()
@@ -419,7 +419,7 @@ def funcFOR(self, TokenType):
 		self.nextToken()
 
 		if self.checkToken(TokenType.NUMBER):
-			if not self.checkPeek(TokenType.COMMA):
+			if self.atExpression():
 				# expression
 				self.expression()
 			else:
@@ -429,7 +429,7 @@ def funcFOR(self, TokenType):
 
 		elif self.checkToken(TokenType.IDENT):
 			# ident
-			if not self.checkPeek(TokenType.COMMA):
+			if self.atExpression():
 				# expression
 				self.expression()
 			else:
@@ -466,7 +466,7 @@ def funcSLEEP(self, TokenType):
 	self.nextToken()
 	
 	if self.checkToken(TokenType.NUMBER):
-		if not self.checkPeek(TokenType.NEWLINE) and not self.checkPeek(TokenType.EOF):
+		if self.atExpression():
 			# expression
 			self.emitter.emit("sleep(")
 			self.expression()
@@ -488,6 +488,7 @@ def funcSLEEP(self, TokenType):
 def funcFUNCTION(self, TokenType):
 	self.nextToken()
 
+	if self.generating_header: self.emitter.override_emit_to_func = True
 	# self.parsing_function = True
 	# self.curFuncVars = {}
 	funcscope = self.downScope()
@@ -581,6 +582,8 @@ def funcFUNCTION(self, TokenType):
 	self.functionsDeclared[name] = funcargs
 
 	self.upScope()
+
+	if self.generating_header: self.emitter.override_emit_to_func = False
 	# self.parsing_function = False
 	# self.curFuncVars = {}
 
@@ -596,6 +599,8 @@ def funcCALL(self, TokenType):
 	self.emitter.emit(self.curToken.text + "(")
 	self.nextToken()
 
+	givenargs = 0
+
 	# first generate the call of the wrapper but store information for the wrapper in the process
 	# if func needs args check for them
 	if argsamount > 0:
@@ -608,37 +613,43 @@ def funcCALL(self, TokenType):
 		for i in range(argsamount):
 			# self.emitter.emit(self.curToken.text)
 			argname = list(self.functionsDeclared[funcname])[i]
-			
-			if self.checkToken(self.functionsDeclared[funcname][argname]):
-				# given parameter is correct datatype (no ident)
+			vartype = self.functionsDeclared[funcname][argname]
+
+			if not (self.checkToken(vartype) or \
+				(self.checkToken(TokenType.IDENT) and self.checkVar(self.curToken.text, vartype))):
+				# not correct type or var with correct type
+				self.abort("Call: Parameter \""+argname+"\" needs to be of type " + \
+					vartype.name + ", not \"" + self.curToken.text +\
+					 '" (' + self.curToken.kind.name + ')', self.curToken.line)
+
+			if self.checkToken(TokenType.STRING):
+				self.emitter.emit('"'+self.curToken.text+'"')
+				self.nextToken()
+			elif self.checkToken(TokenType.BOOL):
 				self.emitter.emit(self.curToken.text)
+				self.nextToken()
 
-			elif self.checkToken(TokenType.IDENT):
-				# given parameter is ident, check if correct datatype
+			elif self.checkToken(TokenType.NUMBER, TokenType.IDENT):
+				if self.atExpression():
+					self.expression()
 
-				# first check if var exists
-				if not self.checkVar(self.curToken.text):
-					self.abort("Call: Variable \"" + self.curToken.text + "\" not defined", self.curToken.line)
-
-
-				# if not self.variablesDeclared[self.curToken.text] \
-					# == self.functionsDeclared[funcname][argname]:
-				if not self.checkVar(self.curToken.text, self.functionsDeclared[funcname][argname]):
-					self.abort("Call: Parameter \""+argname+"\" needs to be of type " + \
-						self.functionsDeclared[funcname][argname], self.curToken.line)
+				# elif self.checkToken(TokenType.IDENT):
 				else:
 					self.emitter.emit(self.curToken.text)
-			else:
-				# wrong parameter
-				self.abort("Call: Parameter \""+argname+"\" needs to be of type " + \
-						self.functionsDeclared[funcname][argname].name, self.curToken.line)
+					self.nextToken()
 
-			self.nextToken()
+				# self.abort("Call: Parameter \""+argname+"\" needs to be of type " + \
+					# self.functionsDeclared[funcname][argname].name + ", not " +\
+					# self.curToken.kind.name + ' ("' + self.curToken.text.strip('\n') + '")', self.curToken.line)
+
+			givenargs += 1
 
 			if i < argsamount - 1:
 				self.match(TokenType.COMMA)
 				self.emitter.emit(',')
 			else:
+				if not self.checkToken(TokenType.NEWLINE):
+					self.abort(f"Call: Expected {argsamount} arguments followed by a NEWLINE, not {givenargs} followed by a {self.curToken.kind.name}.", self.curToken.line)
 				self.emitter.emitLine(');')
 
 	else:
@@ -646,7 +657,7 @@ def funcCALL(self, TokenType):
 		self.emitter.emitLine(');')
 
 	if not self.checkToken(TokenType.NEWLINE):
-		self.abort(f"Call: Function '{funcname}' takes {argsamount} arguments", self.curToken.line)
+		self.abort(f"Call: Expected NEWLINE after {givenargs} argument"+("s" if argsamount!=1 else "")+", not " + self.curToken.kind.name, self.curToken.line)
 
 # "RETURN" (ident | number | string | bool | expression)
 def funcRETURN(self, TokenType):
@@ -660,7 +671,7 @@ def funcRETURN(self, TokenType):
 	self.nextToken()
 	
 	if self.checkToken(TokenType.NUMBER):
-		if not self.checkPeek(TokenType.NEWLINE) and not self.checkPeek(TokenType.EOF):
+		if self.atExpression():
 			# expression
 			self.emitter.emit("return(")
 			self.expression()
@@ -756,7 +767,7 @@ def funcUSE(self, TokenType):
 			self.abort("Use: Script \""+path+"\" not found", self.curToken.line)
 		inclfile = path
 
-	self.print("\nINCLUDING:")
+	self.print(colored("\nINCLUDING:", 'magenta'))
 
 	# header files
 	headerfile = os.path.join(tempfile.gettempdir(), randStr(10)+".h")
@@ -840,7 +851,10 @@ def funcUSE(self, TokenType):
 				# funcdefs and headers will always be on top so the rest can be skipped
 				break
 
-	self.print("DONE INCLUDING\n")
+	# with open(headerfile, 'r') as f:
+	# 	print('\nGenerated header code:\n\n'+f.read())
+
+	self.print(colored("\nDONE INCLUDING", 'magenta'))
 	self.include(headerfile, False)
 	self.nextToken()
 

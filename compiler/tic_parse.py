@@ -1,366 +1,487 @@
 import sys, os
-from lex import *
+from tic_lex import *
+from tic_tokens import Types
 from copy import deepcopy
+from termcolor import colored
 
 class Scope:
-    def __init__(self, variables: dict = {}):
-        self.variablesDeclared = variables
+	def __init__(self, variables: dict = {}):
+		self.variablesDeclared = variables
 
 # Parser object keeps track of current token and checks if the code matches the grammar.
 class Parser:
-    def __init__(self, lexer, emitter, verbose, generating_header):
-        self.lexer = lexer
-        self.emitter = emitter
-        self.verbose = verbose
-        self.generating_header = generating_header
+	def __init__(self, lexer, emitter, verbose, generating_header, sourcefile):
+		self.lexer = lexer
+		self.emitter = emitter
+		self.verbose = verbose
+		self.generating_header = generating_header
+		self.sourcefile = sourcefile
 
-        self.includes = set() # includes needed
-        self.headerfiles = set()
+		self.includes = set() # includes needed
+		self.headerfiles = set()
 
-        self.variablesDeclared = {} # Variables declared so far. key is name and value is type
+		self.variablesDeclared = {} # Variables declared so far. key is name and value is type
 
-        self.labelsDeclared = set() # Labels declared so far.
-        self.labelsGotoed = set()   # Labels goto'ed so far.
+		self.labelsDeclared = set() # Labels declared so far.
+		self.labelsGotoed = set()   # Labels goto'ed so far.
 
-        self.functionsDeclared = {} # key is name and value is amount of args and their types
+		self.functionsDeclared = {} # key is name and value is amount of args and their types
 
-        self.parsing_loop = False
+		self.parsing_loop = False
+		self.parsing_expr = False
 
-        self.scopes = []
-        self.curscope = None
+		self.scopes = []
+		self.curscope = None
 
-        self.allowstartwith = True
-        self.used_emitc = False
+		self.allowstartwith = True
+		self.used_emitc = False
 
-        self.curToken = None
-        self.peekToken = None
+		self.curToken = None
+		self.peekToken = None
+		self.prevToken = None
+		self.stmtToken = None
 
-        self.includes.add('stdio')
-        self.emitter.includes += '#include <stdio.h>\n'
-        self.nextToken(doprint=False)
-        self.nextToken(doprint=False)    # Call this twice to initialize current and peek.
+		self.includes.add('stdio')
+		self.emitter.includes += '#include <stdio.h>\n'
+		self.nextToken(doprint=False)
+		self.nextToken(doprint=False)    # Call this twice to initialize current and peek.
 
-    # Return true if the current token matches.
-    def checkToken(self, kind) -> bool:
-        #
-        return kind == self.curToken.kind
+	# Return true if the current token matches.
+	def checkToken(self, *kinds) -> bool:
+		for kind in kinds:
+			if self.curToken.kind == kind:
+				return True
+		return False
 
-    # Return true if the next token matches.
-    def checkPeek(self, kind) -> bool:
-        #
-        return kind == self.peekToken.kind
+	# Return true if the next token matches.
+	def checkPeek(self, *kinds) -> bool:
+		for kind in kinds:
+			if self.peekToken.kind == kind:
+				return True
+		return False
 
-    # Try to match current token. If not, error. Advances the current token.
-    def match(self, kind, next = True) -> None:
-        if not self.checkToken(kind):
-            self.abort("Expected " + kind.name + ", got " + 
-            	self.curToken.kind.name + " ('" + self.curToken.text + "')", self.curToken.line)
-        if next:
-            self.nextToken()
+	def checkType(self, *types) -> bool:
+		for toktype in types:
+			if self.curToken.kind.value.type == toktype:
+				return True
+		return False
 
-    # Check if var exists in correct scope (and if of correct type if kind is given)
-    def checkVar(self, varname, kind = False) -> bool:
-        # if self.parsing_function:
-        #     if kind:
-        #         return varname in self.curFuncVars and self.curFuncVars[varname] == kind or \
-        #         varname in self.variablesDeclared and self.variablesDeclared[varname] == kind
-        #     return varname in self.curFuncVars or varname in self.variablesDeclared
-        # elif kind:
-        if kind:
-            return varname in (self.curscope.variablesDeclared if self.curscope else self.variablesDeclared) \
-            and (self.curscope.variablesDeclared[varname] if self.curscope else self.variablesDeclared[varname]) == kind
-        return varname in (self.curscope.variablesDeclared if self.curscope else self.variablesDeclared)
-        # return varname in self.variablesDeclared
+	def checkPeekType(self, *types) -> bool:
+		for toktype in types:
+			if self.peekToken.kind.value.type == toktype:
+				return True
+		return False
 
-    # Adds a variable to the current scope
-    def addVar(self, varname, kind) -> None:
-        if self.curscope:
-            self.curscope.variablesDeclared[varname] = kind
-        else:
-            self.variablesDeclared[varname] = kind
+	# Try to match current token. If not, error. Advances the current token.
+	def match(self, kind, next = True) -> None:
+		if not self.checkToken(kind):
+			self.abort("Expected " + kind.name + ", got " + 
+				self.curToken.kind.name + " ('" + self.curToken.text + "')", self.curToken.line)
+		if next:
+			self.nextToken()
 
-    # gets type of var
-    def getVarType(self, varname):
-        if not self.checkVar(varname):
-            raise ValueError(varname + ' does not exist so cant get type')
-        if self.curscope:
-            return self.curscope.variablesDeclared[varname]
-        return self.variablesDeclared[varname]
+	# Check if var exists in correct scope (and if of correct type if kind is given)
+	def checkVar(self, varname, kind = False) -> bool:
+		if kind:
+			return varname in (self.curscope.variablesDeclared if self.curscope else self.variablesDeclared) \
+			and (self.curscope.variablesDeclared[varname] if self.curscope else self.variablesDeclared[varname]) == kind
+		return varname in (self.curscope.variablesDeclared if self.curscope else self.variablesDeclared)
 
-    # Creates a scope that inherits all variables from current scope
-    def createChildScope(self) -> Scope:
-        return Scope((self.curscope.variablesDeclared.copy() if self.curscope \
-            else self.variablesDeclared.copy()))
+	# Adds a variable to the current scope
+	def addVar(self, varname, kind) -> None:
+		if self.curscope:
+			self.curscope.variablesDeclared[varname] = kind
+		else:
+			self.variablesDeclared[varname] = kind
 
-    # goes down a new scope
-    def downScope(self) -> None:
-        scope = self.createChildScope()
-        self.scopes.append(scope)
-        self.curscope = self.scopes[-1]
-        return scope      
+	# gets type of var
+	def getVarType(self, varname):
+		if not self.checkVar(varname):
+			raise ValueError(varname + ' does not exist so cant get type')
+		if self.curscope:
+			return self.curscope.variablesDeclared[varname]
+		return self.variablesDeclared[varname]
 
-    # Goes back up one scope
-    def upScope(self) -> None:
-        self.scopes.pop()
-        self.curscope = self.scopes[-1] if len(self.scopes) != 0 else None
+	# Creates a scope that inherits all variables from current scope
+	def createChildScope(self) -> Scope:
+		return Scope((self.curscope.variablesDeclared.copy() if self.curscope \
+			else self.variablesDeclared.copy()))
 
-    # Advances the current token.
-    def nextToken(self, templexer = None, doprint=True) -> None:
-        self.curToken = self.peekToken
+	# goes down a new scope
+	def downScope(self) -> None:
+		scope = self.createChildScope()
+		self.scopes.append(scope)
+		self.curscope = self.scopes[-1]
+		return scope      
 
-        if templexer == None:
-            self.peekToken = self.lexer.getToken()
-            # No need to worry about passing the EOF, lexer handles that.
+	# Goes back up one scope
+	def upScope(self) -> None:
+		self.scopes.pop()
+		self.curscope = self.scopes[-1] if len(self.scopes) != 0 else None
 
-            # check for includes and add to headers if needed
-            if self.curToken != None and self.curToken.kind.value.include != None:
-                for include in self.curToken.kind.value.include:
-                    self.include(include)
-        else:
-            self.peekToken = templexer.getToken()
+	# Advances the current token.
+	def nextToken(self, templexer = None, doprint=True) -> None:
+		self.curToken = self.peekToken
 
-    # Adds a header to the included headers if it isn't already included
-    def include(self, header, inlib=True) -> None:
-        if not header in self.includes:
-            self.includes.add(header)
-            if inlib:
-                self.emitter.includeLine(f"#include <{header}.h>")
-            else:
-                self.emitter.includeLine(f"#include \"{header}\"")
+		if templexer == None:
+			self.peekToken = self.lexer.getToken()
+			# No need to worry about passing the EOF, lexer handles that.
 
-    # Aborts with message n shit
-    def abort(self, message, line=False) -> None:
-        for file in self.headerfiles:
-            os.remove(file)
+			# check for includes and add to headers if needed
+			if self.curToken != None and self.curToken.kind.value.include != None:
+				for include in self.curToken.kind.value.include:
+					self.include(include)
+		else:
+			self.peekToken = templexer.getToken()
 
-        # raise ValueError("Parse Error: " + message + "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
-        sys.exit("Parse Error: " + message + ((" (at line "+str(line)+")") if line else "")+\
-        "\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com")
-        # print('test')
+		# if self.curToken:
+			# print(colored('nextToken'+(' in expression' if self.parsing_expr else '')+': '+self.curToken.kind.name + ' ' + \
+				# str(self.curToken.line) + ' "' + self.curToken.text + '"', 'green'))
 
-    # prints only if verbose
-    def print(self, message="") -> None:
-        if self.verbose:
-            print(message)
+	def backToken(self):
+		prevToken = self.curToken.prevToken
+		self.peekToken = self.curToken
+		self.curToken = prevToken
+		self.prevToken = self.curToken.prevToken
 
-    # gets current expression as string
-    def get_current_expression(self, save_pos=False) -> str:
-        oldcur, oldpeek = self.curToken, self.peekToken
-        express = ''
-        templexer = deepcopy(self.lexer)
-        while not self.checkToken(TokenType.NEWLINE) and not self.checkToken(TokenType.EOF) and not self.checkToken(TokenType.COMMA):
-            express += self.curToken.text
-            self.nextToken(templexer)
-        if not save_pos:
-            self.curToken, self.peekToken = oldcur, oldpeek
-        return express
+	# Adds a header to the included headers if it isn't already included
+	def include(self, header, inlib=True) -> None:
+		if not header in self.includes:
+			self.includes.add(header)
+			if inlib:
+				self.emitter.includeLine(f"#include <{header}.h>")
+			else:
+				self.emitter.includeLine(f"#include \"{header}\"")
 
-    # parsing
+	# Aborts with message n shit
+	def abort(self, message, line=False, inclstmtline=True) -> None:
+		for file in self.headerfiles:
+			os.remove(file)
 
-    # program ::= {statement}
-    def program(self) -> None:
-        
-        # Since some newlines are required in our grammar, need to skip the excess.
-        while self.checkToken(TokenType.NEWLINE):
-            self.nextToken(doprint=False)
+		if not isinstance(line, int):
+			raise ValueError
 
-        # Parse all the statements in the program.
-        while not self.checkToken(TokenType.EOF):
-            self.statement()
-            self.allowstartwith = False
+		msg = colored("Parse Error", 'red', attrs=['bold']) + ": " + message
 
-        # Check that each label referenced in a GOTO is declared.
-        for label in self.labelsGotoed:
-            if label not in self.labelsDeclared:
-                self.abort("GoTo: Attempting to go to undeclared label: " + label)
+		if self.parsing_expr:
+			msg += " (while parsing an expression)"
 
-        if "START" in self.labelsDeclared:
-            # specific entry point specified in script. start from there
-            self.emitter.specific_entry = True
+		if line:
+			msg += " (at line "+str(line)+""
+			if inclstmtline:
+				msg += " in statement "+self.stmtToken.kind.name+" at line "+str(self.stmtToken.line)+")\n"
+			else:
+				msg += ")\n"
+			with open(self.sourcefile, 'r') as f:
+				lines = f.readlines()
+				if len(lines) < line+1:
+					msg += "\n    "+str(line-2)+'│ '+lines[line-3].strip('\n')+''
+					msg += "\n    "+str(line-1)+'│ '+lines[line-2].strip('\n')+''
+					msg += "\n "+colored("-> "+str(line), "red", attrs=['bold'])+'│ '+\
+						lines[line-1].strip('\n')+''
+				else:
+					msg += "\n    "+str(line-1)+'│ '+lines[line-2].strip('\n')+''
+					msg += "\n "+colored("-> "+str(line), "red", attrs=['bold'])+'│ '+\
+						lines[line-1].strip('\n')+''
+					msg += "\n    "+str(line+1)+'│ '+lines[line].strip('\n')+''
 
-    # One of the following statements...
-    def statement(self) -> None:
-        # Check the first token to see what kind of statement this is.
-        
-        for kind in TokenType:
-            if self.checkToken(kind):
-                if kind.value.execute == None:
-                    self.abort("Invalid statement at '" + self.curToken.text + "' (" + self.curToken.kind.name + ")", self.curToken.line)
-                # found token
-                self.print("\nTOKEN: " + kind.name + " (line "+str(self.curToken.line)+")")
-                self.emitter.emitLine("// TOKEN: "+self.curToken.kind.name+ " Line: "+str(self.curToken.line), True)
+		
+		# msg += '\n\nCurrent Token: ' + self.curToken.kind.name + ' ("' + self.curToken.text.strip('\n') + '")'
+		# msg += '\nToken chain: '
+		# tmp = ""
+		# for i in range(5):
+		# 	tmp += self.curToken.kind.name + '!'
+		# 	self.backToken()
+		# tmp = tmp.split('!')
+		# tmp.reverse()
+		# msg += tmp[0] + ', '.join(tmp[1:])
 
-                kind.value.execute(self, TokenType)
-                break
+		# msg += "\nUpcoming tokens: "
+		# for i in range(2):
+		# 	self.nextToken()
+		# 	msg += self.curToken.kind.name + ', '
+		# self.nextToken()
+		# msg += self.curToken.kind.name
+
+		msg += "\n\nIf you wish to report a bug, create an issue at https://github.com/SjVer/Tic or message sjoerd@marsenaar.com"
+		# raise AttributeError ("FOR DEBUGGING")
+		sys.exit(msg)
+
+	# prints only if verbose
+	def print(self, message="") -> None:
+		if self.verbose:
+			print(message)
+
+
+
+
+
+	# gets current expression as string
+	def get_current_expression(self, use_templexer=False) -> str:
+		if use_templexer:
+			oldcur, oldpeek = self.curToken, self.peekToken
+			templexer = deepcopy(self.lexer)
+		else:
+			templexer = self.lexer
+		express = ''
+		while self.atExpression():
+			express += self.curToken.text
+			self.nextToken(templexer)
+		if use_templexer:
+			self.curToken, self.peekToken = oldcur, oldpeek
+		return express
+
+	def atExpression(self):
+		if self.checkToken(TokenType.NUMBER, TokenType.IDENT) and self.checkPeekType(Types.OPERATOR):
+			# print('\ncurToken:',self.curToken.kind.name)
+			# print('peekToken:',self.peekToken.kind.name)
+			# print('so true')
+			return True
+		elif self.checkToken(TokenType.MINUS) and self.checkPeek(TokenType.NUMBER, TokenType.IDENT):
+			# print('\ncurToken:',self.curToken.kind.name)
+			# print('peekToken:',self.peekToken.kind.name)
+			# print('so true')
+			return True
+		# print('\ncurToken:',self.curToken.kind.name)
+		# print('peekToken:',self.peekToken.kind.name, self.peekToken.kind.value.type)
+		# print('so false')
+		return False
+	# parsing
+
+
+
+
+
+
+
+	# program ::= {statement}
+	def program(self) -> None:
+		
+		# Since some newlines are required in our grammar, need to skip the excess.
+		while self.checkToken(TokenType.NEWLINE):
+			self.nextToken(doprint=False)
+
+		# Parse all the statements in the program.
+		while not self.checkToken(TokenType.EOF):
+			self.statement()
+			self.allowstartwith = False
+
+		# Check that each label referenced in a GOTO is declared.
+		for label in self.labelsGotoed:
+			if label not in self.labelsDeclared:
+				self.abort("GoTo: Attempting to go to undeclared label: " + label)
+
+		if "START" in self.labelsDeclared:
+			# specific entry point specified in script. start from there
+			self.emitter.specific_entry = True
+
+	# One of the following statements...
+	def statement(self) -> None:
+		# Check the first token to see what kind of statement this is.
+		
+		for kind in TokenType:
+			if self.checkToken(kind):
+				if kind.value.execute == None:
+					self.abort("Invalid statement at '" + self.curToken.text + "' (" + self.curToken.kind.name + ")", self.curToken.line, False)
+				# found token
+				self.print(colored("\nTOKEN: " + kind.name + " (line "+str(self.curToken.line)+")", 'blue', attrs=['bold']))
+				self.emitter.emitLine("// TOKEN: "+self.curToken.kind.name+ " Line: "+str(self.curToken.line), True)
+
+				self.stmtToken = self.curToken
+				kind.value.execute(self, TokenType)
+				break
 			
-        # This is not a valid statement. Error!
-        else:
-            self.abort("Invalid statement: '" + self.curToken.text + "' (" + self.curToken.kind.name + ")", self.curToken.line)
-            
-        # Newline.
-        self.nl()
-    
-    # comparison ::= expression (("==" | "!=" | ">" | ">=" | "<" | "<=") expression)+
-    def comparison(self) -> None:
+		# This is not a valid statement. Error!
+		else:
+			self.abort("Invalid statement: '" + self.curToken.text + "' (" + self.curToken.kind.name + ")", self.curToken.line)
+			
+		# Newline.
+		self.nl()
+	
+	# comparison ::= expression (("==" | "!=" | ">" | ">=" | "<" | "<=") expression)+
+	def comparison(self) -> None:
 
-        if self.checkToken(TokenType.STRING) or (self.checkToken(TokenType.IDENT) and \
-        self.checkVar(self.curToken.text, TokenType.STRING)):
-            # comparison with string
-            self.include('string')
-            self.emitter.emit('(strcmp(')
+		if self.checkToken(TokenType.STRING) or (self.checkToken(TokenType.IDENT) and \
+		self.checkVar(self.curToken.text, TokenType.STRING)):
+			# comparison with string
+			self.include('string')
+			self.emitter.emit('(strcmp(')
 
-            # == comparison
-            if self.peekToken.kind in [TokenType.EQEQ,  TokenType.NOTEQ]:
-                eqeq = self.peekToken.kind == TokenType.EQEQ
+			# == comparison
+			if self.peekToken.kind in [TokenType.EQEQ,  TokenType.NOTEQ]:
+				eqeq = self.peekToken.kind == TokenType.EQEQ
 
-                # self.nextToken()
-                if self.checkToken(TokenType.STRING):
-                    self.emitter.emit("\""+self.curToken.text+"\"")
-                elif self.checkToken(TokenType.IDENT):
-                    self.emitter.emit(self.curToken.text)
+				# self.nextToken()
+				if self.checkToken(TokenType.STRING):
+					self.emitter.emit("\""+self.curToken.text+"\"")
+				elif self.checkToken(TokenType.IDENT):
+					self.emitter.emit(self.curToken.text)
 
-                self.emitter.emit(',')
-                self.nextToken() # the == or !=
+				self.emitter.emit(',')
+				self.nextToken() # the == or !=
 
-                self.nextToken()
-                if self.checkToken(TokenType.STRING):
-                    self.emitter.emit("\""+self.curToken.text+"\"")
-                elif self.checkToken(TokenType.IDENT):
-                    self.emitter.emit(self.curToken.text)
-                self.emitter.emit(')==0)' if eqeq else ')!=0)')
-                self.nextToken()
+				self.nextToken()
+				if self.checkToken(TokenType.STRING):
+					self.emitter.emit("\""+self.curToken.text+"\"")
+				elif self.checkToken(TokenType.IDENT):
+					self.emitter.emit(self.curToken.text)
+				self.emitter.emit(')==0)' if eqeq else ')!=0)')
+				self.nextToken()
 
-            elif self.peekToken.kind in [TokenType.THEN, TokenType.OR, \
-            TokenType.AND, TokenType.REPEAT, TokenType.DO]:
-                # just check if string isnt empty
-                if self.checkToken(TokenType.STRING):
-                    self.emitter.emit("\""+self.curToken.text+"\"")
-                elif self.checkToken(TokenType.IDENT):
-                    self.emitter.emit(self.curToken.text)                
-                self.emitter.emit(",\"\")!=0)")
-                self.nextToken()
+			elif self.peekToken.kind in [TokenType.THEN, TokenType.OR, \
+			TokenType.AND, TokenType.REPEAT, TokenType.DO]:
+				# just check if string isnt empty
+				if self.checkToken(TokenType.STRING):
+					self.emitter.emit("\""+self.curToken.text+"\"")
+				elif self.checkToken(TokenType.IDENT):
+					self.emitter.emit(self.curToken.text)                
+				self.emitter.emit(",\"\")!=0)")
+				self.nextToken()
 
-            self.nextToken()
+			self.nextToken()
 
-        # if the comparison is just a bool use it
-        elif self.checkVar(self.curToken.text, TokenType.BOOL):
-            self.emitter.emit(self.curToken.text)
-            self.nextToken()
-            if self.checkToken(TokenType.THEN):
-                return
-        else:
-            self.expression()
-        # Must be at least one comparison operator and another expression.
-        if self.isComparisonOperator():
-            self.emitter.emit(self.curToken.text)
-            self.nextToken()
-            self.expression()
+		# if the comparison is just a bool use it
+		elif self.checkVar(self.curToken.text, TokenType.BOOL):
+			self.emitter.emit(self.curToken.text)
+			self.nextToken()
+			if self.checkToken(TokenType.THEN):
+				return
+		else:
+			self.expression()
+		# Must be at least one comparison operator and another expression.
+		if self.isComparisonOperator():
+			self.emitter.emit(self.curToken.text)
+			self.nextToken()
+			self.expression()
 
-        # allow "OR" and "AND"
-        if self.checkToken(TokenType.OR):
-            self.emitter.emit(')||(')
-            self.nextToken()
-            self.expression()
-        elif self.checkToken(TokenType.AND):
-            self.emitter.emit(')&&(')
-            self.nextToken()
-            self.expression()
+		# allow "OR" and "AND"
+		if self.checkToken(TokenType.OR):
+			self.emitter.emit(')||(')
+			self.nextToken()
+			self.expression()
+		elif self.checkToken(TokenType.AND):
+			self.emitter.emit(')&&(')
+			self.nextToken()
+			self.expression()
 
-        # Can have 0 or more comparison operator and expressions.
-        while True:
-            if self.isComparisonOperator():
-                self.emitter.emit(self.curToken.text)
-                self.nextToken()
-                self.expression()
-            elif self.checkToken(TokenType.OR):
-                self.emitter.emit(')||(')
-                self.nextToken()
-                self.expression()
-            elif self.checkToken(TokenType.AND):
-                self.emitter.emit(')&&(')
-                self.nextToken()
-                self.expression()
-            else:
-                break
-    
-    # expression ::= term {( "-" | "+" ) term}
-    def expression(self, in_func=False) -> None:
-        self.term(in_func)
-        # Can have 0 or more +/- and expressions.
-        while self.checkToken(TokenType.PLUS) or self.checkToken(TokenType.MINUS):
-            if in_func:
-                self.emitter.function(self.curToken.text)
-            else:
-                self.emitter.emit(self.curToken.text)
-            self.nextToken()
-            self.term(in_func)
+		# Can have 0 or more comparison operator and expressions.
+		while True:
+			if self.isComparisonOperator():
+				self.emitter.emit(self.curToken.text)
+				self.nextToken()
+				self.expression()
+			elif self.checkToken(TokenType.OR):
+				self.emitter.emit(')||(')
+				self.nextToken()
+				self.expression()
+			elif self.checkToken(TokenType.AND):
+				self.emitter.emit(')&&(')
+				self.nextToken()
+				self.expression()
+			else:
+				break
+	
+	# expression ::= floordiv {( "-" | "+" ) floordiv}
+	def expression(self) -> None:
+		self.parsing_expr = True
 
-    # term ::= unary {( "/" | "*" ) unary}
-    def term(self, in_func=False) -> None:
-        self.unary(in_func)
-        # Can have 0 or more *// and expressions.
-        while self.checkToken(TokenType.ASTERISK) or self.checkToken(TokenType.SLASH):
-            if in_func:
-                self.emitter.function(self.curToken.text)
-            else:
-                self.emitter.emit(self.curToken.text)
+		self.floordiv() #term()
+		# Can have 0 or more +/- and expressions.
+		while self.checkToken(TokenType.PLUS) or self.checkToken(TokenType.MINUS):
+			self.emitter.emit(self.curToken.text)
+			self.nextToken()
+			self.floordiv() #term()
 
-            self.nextToken()
-            self.unary(in_func)
+		self.parsing_expr = False
 
-    # unary ::= ["+" | "-"] primary
-    def unary(self, in_func=False) -> None:
-        # Optional unary +/-
-        if self.checkToken(TokenType.PLUS) or self.checkToken(TokenType.MINUS):
-            if in_func:
-                self.emitter.function(self.curToken.text)
-            else:
-                self.emitter.emit(self.curToken.text)
-            self.nextToken()        
-        self.primary(in_func)
-    
-    # primary ::= number | ident | bool | string
-    def primary(self, in_func=False) -> None:
-        if self.checkToken(TokenType.NUMBER) or self.checkToken(TokenType.BOOL): 
-            if in_func:
-                self.emitter.function(self.curToken.text)
-            else:
-                self.emitter.emit(self.curToken.text)
-            self.nextToken()
-        elif self.checkToken(TokenType.IDENT):
-            # Ensure the variable already exists.
-            if not self.checkVar(self.curToken.text):
-                self.abort("Referencing variable before declaration: " + self.curToken.text
-                    + (f"\nDeclared variables: {', '.join([k for k in (self.variablesDeclared.keys() if not self.parsing_function else self.curFuncVars)])}" if self.verbose else ''))
+	# floordiv ::= term {"//" term}
+	def floordiv(self):
+		self.emitter.startGetStr()
+		self.term()
+		left = self.emitter.finishGetStr()
+		# print('left:',left)
+		# print('curtok:',self.curToken.kind.name)
+		isflooring = False
+		# self.nextToken()
 
-            if in_func:
-                self.emitter.function(self.curToken.text)
-            else:
-                self.emitter.emit(self.curToken.text)
+		while self.checkToken(TokenType.DSLASH, TokenType.MOD):
+			isflooring = True
+			if self.checkToken(TokenType.DSLASH):
+				self.emitter.emit('floor(')
+				self.emitter.emit(left)
+				self.emitter.emit('/')
+			elif self.checkToken(TokenType.MOD):
+				self.emitter.emit('fmod(')
+				self.emitter.emit(left)
+				self.emitter.emit(',')
 
-            self.nextToken()
-        # elif self.checkToken(TokenType.STRING):
+			# print("floordiv curtoken:",self.curToken.kind)
+			if self.checkToken(TokenType.DSLASH, TokenType.MOD):
+				self.nextToken()
+				self.term()
 
+		if not isflooring:
+			self.emitter.emit(left)
+		else:
+			self.include('math')
+			self.emitter.emit(')')
 
+	# term ::= unary {( "/" | "*" ) unary}
+	def term(self) -> None:
+		self.unary()
+		# Can have 0 or more *// and expressions.
+		while self.checkToken(TokenType.ASTERISK) or self.checkToken(TokenType.SLASH):
+			self.emitter.emit(self.curToken.text)
 
-        else:
-            # Error!
-            self.abort("Unexpected token at '" + self.curToken.text + "' (in primary)")
-    
-    # nl ::= '\n'+
-    def nl(self) -> None:
-        # Require at least one newline.
-        self.match(TokenType.NEWLINE)
-        # But we will allow extra newlines too, of course.
-        while self.checkToken(TokenType.NEWLINE):
-            self.nextToken()
-            
-    # Return true if the current token is a comparison operator.
-    def isComparisonOperator(self) -> bool:
-        return (self.checkToken(TokenType.GT) or
-            self.checkToken(TokenType.GTEQ) or
-            self.checkToken(TokenType.LT) or
-            self.checkToken(TokenType.LTEQ) or
-            self.checkToken(TokenType.EQEQ) or
-            self.checkToken(TokenType.NOTEQ) )
-        
+			self.nextToken()
+			self.unary()
+
+	# unary ::= ["+" | "-"] primary
+	def unary(self) -> None:
+		# Optional unary +/-
+		if self.checkToken(TokenType.PLUS) or self.checkToken(TokenType.MINUS):
+			self.emitter.emit(self.curToken.text)
+			self.nextToken()        
+		self.primary()
+	
+	# primary ::= number | ident | bool | string
+	def primary(self) -> None:
+		if self.checkToken(TokenType.NUMBER) or self.checkToken(TokenType.BOOL): 
+			self.emitter.emit(self.curToken.text)
+			self.nextToken()
+		elif self.checkToken(TokenType.IDENT):
+			# Ensure the variable already exists.
+			if not self.checkVar(self.curToken.text):
+				self.abort("Referencing variable before declaration: " + self.curToken.text)
+
+			elif not self.checkVar(self.curToken.text):
+				self.abort('Variable in expression used before declaration: "'+self.curToken.text+'"')
+			elif not (self.checkVar(self.curToken.text, TokenType.NUMBER) or self.checkVar(self.curToken.text, TokenType.BOOL)):
+				self.abort(f'Variable "{self.curToken.text}" in expression must be of type NUMBER or BOOL, not ' + \
+					self.getVarType(self.curToken.text).name, self.curToken.line)
+
+			self.emitter.emit(self.curToken.text)
+
+			self.nextToken()
+
+		else:
+			# Error!
+			self.abort("Unexpected token at '" + self.curToken.text + "' (in primary)")
+	
+	# nl ::= '\n'+
+	def nl(self) -> None:
+		# Require at least one newline.
+		self.match(TokenType.NEWLINE)
+		# But we will allow extra newlines too, of course.
+		while self.checkToken(TokenType.NEWLINE):
+			self.nextToken()
+			
+	# Return true if the current token is a comparison operator.
+	def isComparisonOperator(self) -> bool:
+		return (self.checkToken(TokenType.GT) or
+			self.checkToken(TokenType.GTEQ) or
+			self.checkToken(TokenType.LT) or
+			self.checkToken(TokenType.LTEQ) or
+			self.checkToken(TokenType.EQEQ) or
+			self.checkToken(TokenType.NOTEQ) )
+		

@@ -1,18 +1,18 @@
 import enum, sys
 
-from funcs import *
+from tic_funcs import *
 
 # Token contains the original text and the type of token.
 class Token:
-    def __init__(self, tokenText, tokenKind, line, emittext=None):
+    def __init__(self, tokenText, tokenKind, prevToken, line, emittext=None):
         self.text = tokenText   # The token's actual text. Used for identifiers, strings, and numbers.
         self.kind = tokenKind   # The TokenType that this token is classified as.
         self.line = line
+        self.prevToken = prevToken
         if self.kind == TokenType.HINT:
             if not emittext:
                 raise AttributeError("TokenType.HINT needs emittext")
             self.emittext = emittext
-
 
     @staticmethod
     def checkIfKeyword(tokenText):
@@ -114,6 +114,8 @@ class TokenType(enum.Enum):
     MINUS   = TokenTypeItem(Types.OPERATOR)
     ASTERISK= TokenTypeItem(Types.OPERATOR)
     SLASH   = TokenTypeItem(Types.OPERATOR)
+    DSLASH  = TokenTypeItem(Types.OPERATOR)
+    MOD     = TokenTypeItem(Types.OPERATOR)
     EQEQ    = TokenTypeItem(Types.OPERATOR)
     NOTEQ   = TokenTypeItem(Types.OPERATOR)
     LT      = TokenTypeItem(Types.OPERATOR)

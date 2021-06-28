@@ -1,5 +1,6 @@
 import enum, sys
-from tokens import *
+from tic_tokens import *
+from termcolor import colored
 
 class Lexer:
     def __init__(self, input, verbose):
@@ -8,6 +9,7 @@ class Lexer:
         self.curPos = -1    		# Current position in the string.
         self.nextChar()
 
+        self.oldtoken = None
         self.linecount = 1
 
         self.verbose = verbose
@@ -64,59 +66,66 @@ class Lexer:
         # Check the first character of this token to see if we can decide what it is.
         # If it is a multiple character operator (e.g., !=), number, identifier, or keyword then we will process the rest.
         if self.curChar == '+':
-            token = Token(self.curChar, TokenType.PLUS, self.linecount)
+            token = Token(self.curChar, TokenType.PLUS, self.oldtoken, self.linecount)
             
         elif self.curChar == '-':
-            token = Token(self.curChar, TokenType.MINUS, self.linecount)
+            token = Token(self.curChar, TokenType.MINUS, self.oldtoken, self.linecount)
             
         elif self.curChar == '*':
-            token = Token(self.curChar, TokenType.ASTERISK, self.linecount)
+            token = Token(self.curChar, TokenType.ASTERISK, self.oldtoken, self.linecount)
             
         elif self.curChar == '/':
-            token = Token(self.curChar, TokenType.SLASH, self.linecount)
+            if self.peek() == '/':
+                self.nextChar()
+                token = Token('//', TokenType.DSLASH, self.oldtoken, self.linecount)
+            else:
+                token = Token(self.curChar, TokenType.SLASH, self.oldtoken, self.linecount)
             
+        elif self.curChar == '%':
+            token = Token(self.curChar, TokenType.MOD, self.oldtoken, self.linecount)
+
         elif self.curChar == '\n':
-            token = Token(self.curChar, TokenType.NEWLINE, self.linecount)
+            token = Token(self.curChar, TokenType.NEWLINE, self.oldtoken, self.linecount)
             self.linecount += 1
         
         elif self.curChar == ',':
-            token = Token(self.curChar, TokenType.COMMA, self.linecount)
+            token = Token(self.curChar, TokenType.COMMA, self.oldtoken, self.linecount)
 
         elif self.curChar == '\0':
-            token = Token('', TokenType.EOF, self.linecount)
+            token = Token('', TokenType.EOF, self.oldtoken, self.linecount)
             
         elif self.curChar == '=':
             # Check whether this token is = or ==
             if self.peek() == '=':
                 lastChar = self.curChar
                 self.nextChar()
-                token = Token(lastChar + self.curChar, TokenType.EQEQ, self.linecount)
+                token = Token(lastChar + self.curChar, TokenType.EQEQ, self.oldtoken, self.linecount)
             else:
-                token = Token(self.curChar, TokenType.EQ, self.linecount)
+                token = Token(self.curChar, TokenType.EQ, self.oldtoken, self.linecount)
                 
         elif self.curChar == '>':
             # Check whether this is token is > or >=
             if self.peek() == '=':
                 lastChar = self.curChar
                 self.nextChar()
-                token = Token(lastChar + self.curChar, TokenType.GTEQ, self.linecount)
+                token = Token(lastChar + self.curChar, TokenType.GTEQ, self.oldtoken, self.linecount)
             else:
-                token = Token(self.curChar, TokenType.GT, self.linecount)
+                token = Token(self.curChar, TokenType.GT, self.oldtoken, self.linecount)
                 
         elif self.curChar == '<':
                 # Check whether this is token is < or <=
                 if self.peek() == '=':
                     lastChar = self.curChar
                     self.nextChar()
-                    token = Token(lastChar + self.curChar, TokenType.LTEQ, self.linecount)
+                    token = Token(lastChar + self.curChar, TokenType.LTEQ, self.oldtoken, self.linecount)
                 else:
-                    token = Token(self.curChar, TokenType.LT, self.linecount)
+                    token = Token(self.curChar, TokenType.LT, self.oldtoken, self.linecount)
                     
         elif self.curChar == '!':
             if self.peek() == '=':
                 lastChar = self.curChar
                 self.nextChar()
-                token = Token(lastChar + self.curChar, TokenType.NOTEQ, self.linecount)
+                token = Token(lastChar + self.curChar, TokenType.NOTEQ, self.oldtoken, self.linecount)
             else:
                 self.abort("Expected !=, got !" + self.peek() + " at line "+str(self.linecount))
                 
@@ -134,7 +143,7 @@ class Lexer:
 
             tokText = self.source[startPos : self.curPos] # Get the substring.
 
-            token = Token(tokText, TokenType.STRING, self.linecount)
+            token = Token(tokText, TokenType.STRING, self.oldtoken, self.linecount)
 
         elif self.curChar == "{":
             # datatype
@@ -151,7 +160,7 @@ class Lexer:
             if not DataTypes.checkIfDataType(tokText):
                 self.abort("Expected valid datatype, not \""+tokText+"\" at line "+str(self.linecount))
 
-            token = Token(tokText, TokenType.HINT, self.linecount, DataTypes.getEmitText(tokText))
+            token = Token(tokText, TokenType.HINT, self.oldtoken, self.linecount, DataTypes.getEmitText(tokText))
             
         elif self.curChar.isdigit():
             # Leading character is a digit, so this must be a number.
@@ -170,7 +179,7 @@ class Lexer:
                     self.nextChar()
 
             tokText = self.source[startPos : self.curPos + 1] # Get the substring.
-            token = Token(tokText, TokenType.NUMBER, self.linecount)
+            token = Token(tokText, TokenType.NUMBER, self.oldtoken, self.linecount)
             
         elif self.curChar.isalpha() or self.curChar == '_':
             # Leading character is a letter, so this must be an identifier or a keyword.
@@ -184,17 +193,21 @@ class Lexer:
             keyword = Token.checkIfKeyword(tokText)
             if keyword == None: # Identifier
                 if tokText == 'true' or tokText == 'false':
-                    token = Token(tokText, TokenType.BOOL, self.linecount)
+                    token = Token(tokText, TokenType.BOOL, self.oldtoken, self.linecount)
                 else:
-                    token = Token(tokText, TokenType.IDENT, self.linecount)
+                    token = Token(tokText, TokenType.IDENT, self.oldtoken, self.linecount)
             else:   # Keyword
-                token = Token(tokText, keyword, self.linecount)
+                token = Token(tokText, keyword, self.oldtoken, self.linecount)
                 
         else:
             # Unknown token!
             self.abort("Unknown token: '" + self.curChar + "' at line: "+str(self.linecount))
 			
         self.nextChar()
+        
+        # print("\t\toldtoken:", self.oldtoken.kind if self.oldtoken != None else None, 'newtoken:',token.kind)
+        self.oldtoken = token
+
         if self.verbose:
-            print('LEX: Token ' + token.kind.name)
+            print(colored('LEX: Token ' + token.kind.name + ', ' + token.text, 'red'))
         return token

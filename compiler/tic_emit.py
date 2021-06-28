@@ -1,4 +1,5 @@
 import os, subprocess
+from termcolor import colored
 
 # Emitter object keeps track of the generated code and outputs it.
 class Emitter:
@@ -11,6 +12,9 @@ class Emitter:
 		self.specific_entry = False
 		self.override_emit_to_func = False
 
+		self.override_emit_to_str = False
+		self.tempstr = ""
+
 		self.includes = ""
 		self.functions = ""
 		self.header = ""
@@ -20,25 +24,41 @@ class Emitter:
 		self.mainargs = ""
 		self.code = ""
 
+	def startGetStr(self):
+		self.override_emit_to_str = True
+		self.tempstr = ""
+
+	def finishGetStr(self) -> str:
+		self.override_emit_to_str = False
+		retval = self.tempstr
+		self.tempstr = ""
+		return retval
+
 	def emit(self, code, silent=False):
+
+		if self.override_emit_to_str:
+			self.tempstr += code
+			return
+
 		if self.verbose and not silent:
-			print("EMIT"+(" FUNCTION" if self.override_emit_to_func else "")+": " + code.strip())
+			print(colored("EMIT"+(" FUNCTION" if self.override_emit_to_func else ""), 'yellow')+": " + code.strip())
 		if self.override_emit_to_func:
 			self.functions += code
 		else:
 			self.code += code
 
 	def emitLine(self, code, silent=False):
+		#
 		self.emit(code + '\n', silent)
 
 	def headerLine(self, code, silent=False):
 		if self.verbose and not silent:
-			print("EMIT HEADER: " + code)
+			print(colored("EMIT HEADER", 'magenta')+": " + code)
 		self.header += code + '\n'
 
 	def includeLine(self, code):
 		if self.verbose:
-			print("EMIT INCLUDE: " + code)
+			print(colored("EMIT INCLUDE", 'magenta')+": " + code)
 		self.includes += code + '\n'
 
 	def emitMainArg(self, code):
@@ -61,14 +81,14 @@ class Emitter:
 			print("EMIT PRE-CODE: "+code.strip())
 		self.pre_code += code
 
-	def function(self, code):
-		if self.verbose:
-			print("EMIT FUNCTION: " + code)
-		self.functions += code
+	# def function(self, code):
+	# 	if self.verbose:
+	# 		print("EMIT FUNCTION: " + code)
+	# 	self.functions += code
 
 	def writeFile(self, funcs=None, includes=None, variables=None):
 		code = self.includes + "\n\n" + self.header
-		code += "\n\n//funcs:\n\n" + self.functions
+		code += "\n\n" + self.functions
 		code += "\n\n//code:\n\nint MAIN("+(self.mainargs if self.mainargs != "" else "void")+"){\n"
 		code += self.pre_code + "\n"
 		code += ('goto START;' if self.specific_entry else '') + self.code + "\nreturn 0;\n}"

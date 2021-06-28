@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 VERSION="1.4.0"
 
-from lex import *
-from emit import *
-from parse import *
+from tic_lex import *
+from tic_emit import *
+from tic_parse import *
 import sys, argparse, os, tempfile
 
 def main(file, output, compiler, verbose, run, preserve_temp, generate_header):
@@ -21,15 +21,15 @@ def main(file, output, compiler, verbose, run, preserve_temp, generate_header):
         temp = os.path.splitext(file)[0]+'.c'
 
     with open(file, 'r') as inputFile:
-        input = inputFile.read()
+        inputcode = inputFile.read()
 
     # Initialize the lexer, emitter, and parser.
-    lexer = Lexer(input, False)#, verbose)
+    lexer = Lexer(inputcode, False) #, verbose)
     emitter = Emitter(temp, verbose, preserve_temp, generate_header)
-    parser = Parser(lexer, emitter, verbose, generate_header)
 
     if verbose:
         print("Parsing file.")
+    parser = Parser(lexer, emitter, verbose, generate_header, file)
     parser.program() # Start the parser.
     if generate_header:
         emitter.writeFile(parser.functionsDeclared, parser.includes, parser.variablesDeclared) # Write the output to file.
@@ -69,6 +69,12 @@ def main(file, output, compiler, verbose, run, preserve_temp, generate_header):
         os.system(output)
     
 if __name__ == '__main__':
+
+    try:
+        import termcolor
+    except ModuleNotFoundError:
+        print("Module \"termcolor\" not found. Install it using \"pip3 install termcolor\".")
+        sys.exit(1)
     
     if '--version' in sys.argv:
         print(f"Tic compiler version {VERSION} by Sjoerd Vermeulen")

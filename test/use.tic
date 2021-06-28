@@ -10,5 +10,6 @@ Call myfunc
 Call mysecondfunc With 2.5, true
 
 # the variables declared are also imported
+Set mynum = 123.456
 PrintLine mynum
 PrintLine mybool
