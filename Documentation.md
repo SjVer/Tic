@@ -1,6 +1,6 @@
 # Tic Documentation
 All currently implemented features are documented here.
-Example scripts can be found in the 'test/' directory. Every syntax in the Tic language is used in at least one of those examples.
+Example scripts can be found in the 'test/' directory. Every syntax in the Tic language is used in at least one of those examples. Further down this page more detailed documentation on declaring variables is given.
 <br/>
 <br/>
 ## Syntaxes
@@ -159,8 +159,10 @@ Does
 	<code to execute>
 EndFunction
 ``` 
+Returning variables used inside a function can be done using ```EndFunction Returning <variable>```.
 <br/>
-
+<br/>
+<br/>
 **Takes** <br/>
 See `Function` (not yet implemented)
 <br/> <br/>
@@ -170,6 +172,10 @@ See `Function`
 <br/> <br/>
 
 **EndFunction** <br/>
+See `Function`
+<br/> <br/>
+
+**Returning** <br/>
 See `Function`
 <br/> <br/>
 
@@ -186,7 +192,19 @@ Call <name> With <variables seperated by a comma>
 <br/>
 
 **With** <br/>
-See `Call`
+See `Call` and `Return`
+<br/> <br/>
+
+**Return** <br/>
+The return value of a function that returns a value can be assigned to a predeclared variable of the same type.
+```
+Return <function name> To <variable>
+Return <function name> With <arguments> To <variable>
+```
+<br/>
+
+**To** <br/>
+See `Return`
 <br/> <br/>
 
 **StartWith** <br/>
@@ -197,7 +215,7 @@ StartWith <hinted variables seperated by a comma>
 <br/>
 
 **Use** <br/>
-Imports all functions and declared variables from the given Tic script, similar to Python's `from <scriptname> import *`. If the script name isn't surrounded by quotes the compiler will assume that the given script exists in the same directory as the script that's using it. If this is not the case the script name must be given as either an absolute or relative path in the form of a string. Along with the variables the values will be imported that have been set using their `Declare` syntax.
+Imports all functions and declared variables from the given Tic script, similar to Python's `from <scriptname> import *`. If the script name isn't surrounded by quotes the compiler will assume that the given script exists in the standard library. If this is not the case the script name must be given as either an absolute or relative path in the form of a string. Along with the variables the values will be imported that have been set using their `Declare` syntax.
 ```
 Use <scriptname>
 Use "<scriptpath>"
@@ -210,6 +228,14 @@ Adds a string of C code to the generated C code. I AM NOT RESPONSIBLE FOR COMPIL
 EmitC "<string to emit>"
 ```
 <br/>
+
+**InclC** <br/>
+Includes the given C header to the compilation of the generated C code. This header must be available as is by your C compiler. I AM NOT RESPONSIBLE FOR COMPILE ERRORS AS A RESULT OF THIS.
+```
+InclC "myheader.h"
+```
+<br/>
+
 
 
 **Exit** <br/>
@@ -230,9 +256,37 @@ Sleep <variable>
 ```
 <br/>
 
+## Variable Declaration
+The declaration of variables can be done either with- or without a type hint. If a variable isn't hinted, a value must be given, otherwise it can be left out. Any constant variable must have a value.
+```
+Declare mynum = 1
+Declare {number} mynum
+Declare {number} mynum = 1
+Declare {constant number} mynum = 1
 
-## Supported operators
-All supported operators behave as normal <br/>
+Declare mystring = "test"
+Declare {string} mystring
+Declare {string} mystring = "test"
+Declare {constant string} mystring = "test"
+
+Declare mybool = true
+Declare {bool} mybool
+Declare {bool} mybool = true
+Declare {constant bool} mybool = true
+```
+Function parameters can be optional as well. This means that they do not have to be provided by the function call. If this is the case the value of the optional variable will either be the default one or one specified by the user. An optional parameter can only by followed by more optional parameters.
+```
+Function myfunc Takes
+	{number} a,
+	{optional bool} b,
+	{optional string} c = "default"
+Does
+	...
+```
+
+
+## Supported Operators
+All supported operators behave as normal. (The `//` is a floor division) <br/>
 
 | <!-- -->    |
 |--- |
@@ -241,6 +295,8 @@ All supported operators behave as normal <br/>
 | -  |
 | *  |
 | /  |
+| %  |
+| // |
 | == |
 | != |
 | >  |
