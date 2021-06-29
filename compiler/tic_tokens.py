@@ -4,15 +4,15 @@ from tic_funcs import *
 
 # Token contains the original text and the type of token.
 class Token:
-    def __init__(self, tokenText, tokenKind, prevToken, line, emittext=None):
+    def __init__(self, tokenText, tokenKind, prevToken, line, hintprops=None):
         self.text = tokenText   # The token's actual text. Used for identifiers, strings, and numbers.
         self.kind = tokenKind   # The TokenType that this token is classified as.
         self.line = line
         self.prevToken = prevToken
         if self.kind == TokenType.HINT:
-            if not emittext:
-                raise AttributeError("TokenType.HINT needs emittext")
-            self.emittext = emittext
+            if not hintprops:
+                raise AttributeError("TokenType.HINT needs hintprops")
+            self.hintprops = hintprops
 
     @staticmethod
     def checkIfKeyword(tokenText):
@@ -20,6 +20,13 @@ class Token:
             if kind.value.keyword == tokenText and kind.value.type == Types.KEYWORD:
                 return kind
         return None
+
+class HintProps:
+    def __init__(self):
+        self.emittext = ""
+        self.const = False
+        self.opt = False
+
 
 # types of tokens
 class Types(enum.Enum):
@@ -104,10 +111,13 @@ class TokenType(enum.Enum):
     ENDFUNC = TokenTypeItem(Types.KEYWORD, 'EndFunction')
     CALL    = TokenTypeItem(Types.KEYWORD, 'Call',      func=funcCALL)
     WITH    = TokenTypeItem(Types.KEYWORD, 'With')
+    FRETURN = TokenTypeItem(Types.KEYWORD, 'Returning')
     RETURN  = TokenTypeItem(Types.KEYWORD, 'Return',    func=funcRETURN)
+    TO      = TokenTypeItem(Types.KEYWORD, 'To')
     STARTW  = TokenTypeItem(Types.KEYWORD, 'StartWith', func=funcSTARTW,    include=['stdlib', 'string'])
     USE     = TokenTypeItem(Types.KEYWORD, 'Use',       func=funcUSE)
     EMITC   = TokenTypeItem(Types.KEYWORD, 'EmitC',     func=funcEMITC,     include=['stdlib', 'stdbool', 'stdio', 'string', 'math', 'ctype'])
+    INCLC   = TokenTypeItem(Types.KEYWORD, 'InclC',     func=funcINCLC)
     # Operators
     EQ      = TokenTypeItem(Types.OPERATOR)
     PLUS    = TokenTypeItem(Types.OPERATOR)

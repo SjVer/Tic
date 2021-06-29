@@ -95,7 +95,7 @@ contexts:
       scope: keyword
       set: label
 
-    - match: '\b(Declare|Set|Input|Print|PrintLine|StartWith|Exit|Break)\b'
+    - match: '\b(Declare|Set|Input|Print|PrintLine|StartWith|Exit|Break|EmitC|InclC)\b'
       scope: variable.function
 
   function_name:

@@ -1,0 +1,57 @@
+# standard math module
+
+# constants
+Declare {number} PI = 3.14159265
+
+# functions:
+# floor
+# round
+# ceil
+
+Function pow Takes
+	{number} base, {number} power
+Does
+	Declare result = 1
+	
+	While power > 0 Repeat
+		If power % 2 == 0 Then
+			Set power = power // 2
+			Set base = base * base
+		Else
+			Set power = power - 1
+			Set result = result * base
+			Set power = power // 2
+			Set base = base * base
+		EndIf
+	EndWhile
+EndFunction Returning result
+
+Function sqrt Takes {number} value Does
+	InclC "math.h"
+	Declare {number} result
+	EmitC "result = sqrt((double)value);"
+EndFunction Returning result
+
+Function sin Takes {number} value Does
+	InclC "math.h"
+	Declare {number} result
+	EmitC "result = sin(value);"
+EndFunction Returning result
+
+Function cos Takes {number} value Does
+	InclC "math.h"
+	Declare {number} result
+	EmitC "result = cos(value);"
+EndFunction Returning result
+
+Function tan Takes {number} value Does
+	InclC "math.h"
+	Declare {number} result
+	EmitC "result = tan(value);"
+EndFunction Returning result
+
+Function log Takes {number} value Does
+	InclC "math.h"
+	Declare {number} result
+	EmitC "result = log(value);"
+EndFunction Returning result

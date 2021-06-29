@@ -12,3 +12,13 @@ Declare f = "test"
 Declare {bool} g = true
 Declare {bool} h
 Declare i = true
+
+# constants cannot be changed
+Declare {constant bool} alwaystrue = true
+# "Set alwaystrue = false" triggers an error!
+
+#*
+"Declare {constant number} mynum" triggers an error
+as it's not allowed to declare a constant without
+an initial value
+*#

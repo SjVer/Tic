@@ -45,10 +45,12 @@ class Lexer:
                 self.nextChar()
                 self.nextChar()
                 # comment block
-                while self.curChar != "*" and self.peek() != '#':
-                    if self.curChar == '\n':
+                while True:
+                    if self.curChar == "*" and self.peek() == '#':
+                        self.nextChar()
+                        break
+                    elif self.curChar == '\n':
                         self.linecount += 1
-                    # print(self.curChar)
                     self.nextChar()
                 self.nextChar()
                 self.nextChar()
@@ -152,15 +154,24 @@ class Lexer:
 
             while self.curChar != "}":
                 self.nextChar()
-                if not self.curChar.isalpha() and not self.curChar == '}':
+                if not self.curChar.isalpha() and not self.curChar == ' ' and not self.curChar == '}':
                     self.abort("Illegal character in type hint at line "+str(self.linecount))
 
             tokText = self.source[startPos : self.curPos]
 
-            if not DataTypes.checkIfDataType(tokText):
-                self.abort("Expected valid datatype, not \""+tokText+"\" at line "+str(self.linecount))
+            hintprops = HintProps()
+            if tokText.startswith('constant '):
+                hintprops.const = True
+                tokText = tokText.replace('constant ', '')
+            elif tokText.startswith('optional '):
+                hintprops.opt = True
+                tokText = tokText.replace('optional ', '')
 
-            token = Token(tokText, TokenType.HINT, self.oldtoken, self.linecount, DataTypes.getEmitText(tokText))
+            if not DataTypes.checkIfDataType(tokText):
+                self.abort("Expected (optinally \"constant\" or \"optional\" followed by a) valid datatype, not \""+tokText+"\" at line "+str(self.linecount))
+            hintprops.emittext = DataTypes.getEmitText(tokText)
+
+            token = Token(tokText, TokenType.HINT, self.oldtoken, self.linecount, hintprops)
             
         elif self.curChar.isdigit():
             # Leading character is a digit, so this must be a number.

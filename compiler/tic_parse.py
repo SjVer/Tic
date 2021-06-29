@@ -8,14 +8,27 @@ class Scope:
 	def __init__(self, variables: dict = {}):
 		self.variablesDeclared = variables
 
+class VarProperties:
+	def __init__(self, vartype: TokenType, mutable: bool):
+		self.type: TokenType = vartype
+		self.mutable: bool = mutable
+
+class FuncPropterties:
+	def __init__(self, params: dict, optargc: int, doesreturn: bool, returntype: TokenType = None):
+		self.params: dict = params
+		self.optargc: int = optargc
+		self.doesreturn: bool = doesreturn
+		self.returntype: TokenType = returntype
+
 # Parser object keeps track of current token and checks if the code matches the grammar.
 class Parser:
-	def __init__(self, lexer, emitter, verbose, generating_header, sourcefile):
+	def __init__(self, lexer, emitter, verbose, generating_header, sourcefile, stdlibpath):
 		self.lexer = lexer
 		self.emitter = emitter
 		self.verbose = verbose
 		self.generating_header = generating_header
 		self.sourcefile = sourcefile
+		self.stdlibpath = stdlibpath
 
 		self.includes = set() # includes needed
 		self.headerfiles = set()
@@ -27,6 +40,7 @@ class Parser:
 
 		self.functionsDeclared = {} # key is name and value is amount of args and their types
 
+		self.parsing_function = False
 		self.parsing_loop = False
 		self.parsing_expr = False
 
@@ -34,7 +48,7 @@ class Parser:
 		self.curscope = None
 
 		self.allowstartwith = True
-		self.used_emitc = False
+		self.used_experimental = False
 
 		self.curToken = None
 		self.peekToken = None
@@ -84,23 +98,43 @@ class Parser:
 	def checkVar(self, varname, kind = False) -> bool:
 		if kind:
 			return varname in (self.curscope.variablesDeclared if self.curscope else self.variablesDeclared) \
-			and (self.curscope.variablesDeclared[varname] if self.curscope else self.variablesDeclared[varname]) == kind
+			and (self.curscope.variablesDeclared[varname].type if self.curscope else self.variablesDeclared[varname].type) == kind
 		return varname in (self.curscope.variablesDeclared if self.curscope else self.variablesDeclared)
 
-	# Adds a variable to the current scope
-	def addVar(self, varname, kind) -> None:
+	# gets dict of all vars in current scope
+	def getVars(self) -> dict:
 		if self.curscope:
-			self.curscope.variablesDeclared[varname] = kind
+			return self.curscope.variablesDeclared.copy()
+		return self.variablesDeclared.copy()
+
+	# Adds a variable to the current scope
+	def addVar(self, varname, kind, const) -> None:
+		props = VarProperties(kind, const)
+		if self.curscope:
+			self.curscope.variablesDeclared[varname] = props
 		else:
-			self.variablesDeclared[varname] = kind
+			self.variablesDeclared[varname] = props
 
 	# gets type of var
 	def getVarType(self, varname):
 		if not self.checkVar(varname):
 			raise ValueError(varname + ' does not exist so cant get type')
 		if self.curscope:
-			return self.curscope.variablesDeclared[varname]
-		return self.variablesDeclared[varname]
+			return self.curscope.variablesDeclared[varname].type
+		return self.variablesDeclared[varname].type
+
+	def checkVarMutability(self, varname):
+		if not self.checkVar(varname):
+			return False
+		elif self.curscope:
+			return self.curscope.variablesDeclared[varname].mutable
+		return self.variablesDeclared[varname].mutable
+
+	def addFunc(self, name, funcargs, optargc, doesreturn, returntype):
+		props = FuncPropterties(funcargs, optargc, doesreturn)
+		if doesreturn:
+			props.returntype = returntype
+		self.functionsDeclared[name] = props
 
 	# Creates a scope that inherits all variables from current scope
 	def createChildScope(self) -> Scope:
@@ -146,12 +180,14 @@ class Parser:
 
 	# Adds a header to the included headers if it isn't already included
 	def include(self, header, inlib=True) -> None:
+		if header.endswith('.h'):
+			header = header[:-2]
 		if not header in self.includes:
 			self.includes.add(header)
 			if inlib:
 				self.emitter.includeLine(f"#include <{header}.h>")
 			else:
-				self.emitter.includeLine(f"#include \"{header}\"")
+				self.emitter.includeLine(f"#include \"{header}.h\"")
 
 	# Aborts with message n shit
 	def abort(self, message, line=False, inclstmtline=True) -> None:
@@ -161,7 +197,7 @@ class Parser:
 		if not isinstance(line, int):
 			raise ValueError
 
-		msg = colored("Parse Error", 'red', attrs=['bold']) + ": " + message
+		msg = colored("Parse Error", 'red', attrs=['bold']) + ": " + message + '.'
 
 		if self.parsing_expr:
 			msg += " (while parsing an expression)"
@@ -174,16 +210,32 @@ class Parser:
 				msg += ")\n"
 			with open(self.sourcefile, 'r') as f:
 				lines = f.readlines()
+
 				if len(lines) < line+1:
-					msg += "\n    "+str(line-2)+'│ '+lines[line-3].strip('\n')+''
-					msg += "\n    "+str(line-1)+'│ '+lines[line-2].strip('\n')+''
-					msg += "\n "+colored("-> "+str(line), "red", attrs=['bold'])+'│ '+\
+					if len(lines) > 2:
+						msg += "\n    "+(' ' if line-2 < 10 else '')+str(line-2)+'│ '+lines[line-3].strip('\n')+''
+					
+					if len(lines) > 1:
+						msg += "\n    "+(' ' if line-1 < 10 else '')+str(line-1)+'│ '+lines[line-2].strip('\n')+''
+					
+					msg += "\n "+colored("-> "+(' ' if line < 10 else '')+str(line), "red", attrs=['bold'])+'│ '+\
 						lines[line-1].strip('\n')+''
+
+				elif line-1 < 1:
+					msg += "\n "+colored("-> "+(' ' if line < 10 else '')+str(line), "red", attrs=['bold'])+'│ '+\
+						lines[line-1].strip('\n')+''
+
+					if len(lines) > 2:
+						msg += "\n    "+(' ' if line-1 < 10 else '')+str(line+1)+'│ '+lines[line].strip('\n')+''
+					
+					if len(lines) > 3:
+						msg += "\n    "+(' ' if line-2 < 10 else '')+str(line+2)+'│ '+lines[line+1].strip('\n')+''
+					
 				else:
-					msg += "\n    "+str(line-1)+'│ '+lines[line-2].strip('\n')+''
-					msg += "\n "+colored("-> "+str(line), "red", attrs=['bold'])+'│ '+\
+					msg += "\n    "+(' ' if line-1 < 10 else '')+str(line-1)+'│ '+lines[line-2].strip('\n')+''
+					msg += "\n "+(' ' if line < 10 else '')+colored("-> "+str(line), "red", attrs=['bold'])+'│ '+\
 						lines[line-1].strip('\n')+''
-					msg += "\n    "+str(line+1)+'│ '+lines[line].strip('\n')+''
+					msg += "\n    "+(' ' if line+1 < 10 else '')+str(line+1)+'│ '+lines[line].strip('\n')+''
 
 		
 		# msg += '\n\nCurrent Token: ' + self.curToken.kind.name + ' ("' + self.curToken.text.strip('\n') + '")'
@@ -213,22 +265,23 @@ class Parser:
 			print(message)
 
 
-
-
-
 	# gets current expression as string
-	def get_current_expression(self, use_templexer=False) -> str:
-		if use_templexer:
-			oldcur, oldpeek = self.curToken, self.peekToken
-			templexer = deepcopy(self.lexer)
-		else:
-			templexer = self.lexer
-		express = ''
+	def get_current_expression(self) -> str:
+		# if use_templexer:
+			# oldcur, oldpeek = self.curToken, self.peekToken
+			# templexer = deepcopy(self.lexer)
+		# else:
+			# templexer = self.lexer
+		# express = ''
+		self.emitter.startGetStr()
 		while self.atExpression():
-			express += self.curToken.text
-			self.nextToken(templexer)
-		if use_templexer:
-			self.curToken, self.peekToken = oldcur, oldpeek
+			# express += self.curToken.text
+			self.expression()
+			# self.nextToken(templexer)
+		express = self.emitter.finishGetStr()
+		print('returning:',express)
+		# if use_templexer:
+			# self.curToken, self.peekToken = oldcur, oldpeek
 		return express
 
 	def atExpression(self):
@@ -237,7 +290,7 @@ class Parser:
 			# print('peekToken:',self.peekToken.kind.name)
 			# print('so true')
 			return True
-		elif self.checkToken(TokenType.MINUS) and self.checkPeek(TokenType.NUMBER, TokenType.IDENT):
+		elif self.checkToken(TokenType.MINUS) and self.checkPeek(TokenType.NUMBER, TokenType.IDENT, TokenType.CALL):
 			# print('\ncurToken:',self.curToken.kind.name)
 			# print('peekToken:',self.peekToken.kind.name)
 			# print('so true')
@@ -247,11 +300,6 @@ class Parser:
 		# print('so false')
 		return False
 	# parsing
-
-
-
-
-
 
 
 	# program ::= {statement}
@@ -449,6 +497,7 @@ class Parser:
 		if self.checkToken(TokenType.NUMBER) or self.checkToken(TokenType.BOOL): 
 			self.emitter.emit(self.curToken.text)
 			self.nextToken()
+
 		elif self.checkToken(TokenType.IDENT):
 			# Ensure the variable already exists.
 			if not self.checkVar(self.curToken.text):

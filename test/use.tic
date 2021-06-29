@@ -1,7 +1,7 @@
 # "function.tic" is in the same directory as this script, that's why this syntax can be used.
 # Otherwise the script should be given as a path in a string
 
-Use function
+Use "function"
 
 # myfunc is defined in "function.tic" and thus imported.
 Call myfunc

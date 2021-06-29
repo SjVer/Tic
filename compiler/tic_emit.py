@@ -13,6 +13,7 @@ class Emitter:
 		self.override_emit_to_func = False
 
 		self.override_emit_to_str = False
+		self.override_emit_to_str_mute = True
 		self.tempstr = ""
 
 		self.includes = ""
@@ -24,8 +25,9 @@ class Emitter:
 		self.mainargs = ""
 		self.code = ""
 
-	def startGetStr(self):
+	def startGetStr(self, mute=True):
 		self.override_emit_to_str = True
+		self.override_emit_to_str_mute = mute
 		self.tempstr = ""
 
 	def finishGetStr(self) -> str:
@@ -37,10 +39,12 @@ class Emitter:
 	def emit(self, code, silent=False):
 
 		if self.override_emit_to_str:
+			if not self.override_emit_to_str_mute and self.verbose and not silent:
+				print(colored("EMIT TEMP"+(" FUNCTION" if self.override_emit_to_func else ""), 'yellow')+": " + code.strip())
 			self.tempstr += code
 			return
 
-		if self.verbose and not silent:
+		if self.verbose and not silent and not self.override_emit_to_str:
 			print(colored("EMIT"+(" FUNCTION" if self.override_emit_to_func else ""), 'yellow')+": " + code.strip())
 		if self.override_emit_to_func:
 			self.functions += code
@@ -103,18 +107,25 @@ class Emitter:
 
 			# genererate a line that includes the name, arg amount and args of the function
 			# so that the parser of another script can read that
+
 			for func in list(funcs):
+				ffunc = funcs[func]
 				code += "// DEFFUNC!"+func+"!"
-				code +="["+str(len(list(funcs[func])))+"]"
-				if funcs[func] != {}:
-					for par in list(funcs[func]):
-						code += "{"+par+":"+funcs[func][par].name+"}"
-				code += "\n"
+				code +="["+str(len(list(ffunc.params)))+":"+str(ffunc.optargc)+']'
+				if funcs[func].params != {}:
+					for par in list(ffunc.params):
+
+						code += "{"+par+":"+ffunc.params[par]['type'].name+\
+								":"+str(ffunc.params[par]['opt'])+':'+\
+								str(ffunc.params[par]['default'])+'}'
+
+				code += '('+str(ffunc.doesreturn)+':'+str(ffunc.returntype).replace('TokenType.', '')+')\n'
 
 			# do the same with variables
 			for var in list(variables):
 				code += "// DEFVAR!"+var+"!"
-				code += "{"+variables[var].name+"}\n"
+				code += "{"+variables[var].type.name+"}"
+				code += "["+str(variables[var].mutable)+']\n'
 
 			# do the same with headers
 			code += "// INCL["

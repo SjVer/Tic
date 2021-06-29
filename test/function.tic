@@ -1,15 +1,15 @@
 # An example script in Tic
 
+# this function takes no parameters and returns nothing
 Function myfunc Does
 	PrintLine "myfunc called!"
 EndFunction
 
-Label MyLabel
 Call myfunc
-Exit 0
 
+# this function takes a number and optionally a bool as parameters
 Function mysecondfunc Takes
-	{number} x, {bool} y
+	{number} x, {optional bool} y = true
 Does
 	PrintLine "mysecondfunc called!"
 	Print "x: "
@@ -22,8 +22,6 @@ Does
 	EndIf
 EndFunction
 
-Label START # the script will start here
-
 Declare mybool = true
 Declare {number} mynum
 
@@ -31,5 +29,17 @@ Print "Enter a number: "
 Input mynum
 
 Call mysecondfunc With mynum, mybool
-GoTo MyLabel
 
+
+
+
+Function returnfunc Takes
+	{number} a
+Does
+	Set a = a * 2
+EndFunction Returning a
+
+Declare {number} destnum
+Return returnfunc With 2 To destnum
+Print "number returned from returnfunc: "
+PrintLine destnum

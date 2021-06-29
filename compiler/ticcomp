@@ -4,9 +4,9 @@ VERSION="1.4.0"
 from tic_lex import *
 from tic_emit import *
 from tic_parse import *
-import sys, argparse, os, tempfile
+import sys, argparse, os, tempfile, pathlib
 
-def main(file, output, compiler, verbose, run, preserve_temp, generate_header):
+def main(file, output, compiler, verbose, run, preserve_temp, generate_header, stdlibpath):
     if verbose:
         print("Tic Compiler")
 
@@ -29,7 +29,7 @@ def main(file, output, compiler, verbose, run, preserve_temp, generate_header):
 
     if verbose:
         print("Parsing file.")
-    parser = Parser(lexer, emitter, verbose, generate_header, file)
+    parser = Parser(lexer, emitter, verbose, generate_header, file, stdlibpath)
     parser.program() # Start the parser.
     if generate_header:
         emitter.writeFile(parser.functionsDeclared, parser.includes, parser.variablesDeclared) # Write the output to file.
@@ -41,11 +41,12 @@ def main(file, output, compiler, verbose, run, preserve_temp, generate_header):
             print("Generation of header file complete.")
         sys.exit(0)
 
-    if parser.used_emitc:
-            print("Warning! EmitC was used. The compilation might not succeed.")
+    if parser.used_experimental:
+            print("Warning! Experimental features were used. The following compilation might not succeed.")
     if verbose:
         print("Parsing complete.")
         print("Compiling file.") 
+
     # make sure dirs exist
     if not os.path.exists(os.path.dirname(output)):
         os.mkdir(os.path.dirname(output))
@@ -85,10 +86,14 @@ if __name__ == '__main__':
     parser.add_argument('input', type=str, help='input script (program passed in as .tic file)')
     parser.add_argument('-o', '--output', dest='file', action='store', help='specify the output file')
     parser.add_argument('-c', '--compiler', dest='compiler', default='/usr/bin/gcc', action='store', help='specify the c compiler (gcc by default)')
-    parser.add_argument('-v', '--verbose', action='store_true', default=0, help='verbose compiling')
-    parser.add_argument('-r', '--run', action='store_true', default=0, help='run after compilation')
-    parser.add_argument('-p', '--preserve-temp', action='store_true', default=0, help='preserve temporary c file')
-    parser.add_argument('-g', '--generate-header', action='store_true', default=0, help='generate a c header file (as only output)')
+    parser.add_argument('-l', '--lib', dest='lib', 
+        #default=os.path.join(str(pathlib.Path.home()), '.local', 'lib', 'tic'), 
+        default=os.path.join(str(pathlib.Path.home()), 'Tic', 'stdlib'), 
+        action='store', help='specify the location of the standard library used (~/.local/lib/tic by default)')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False, help='verbose compiling')
+    parser.add_argument('-r', '--run', action='store_true', default=False, help='run after compilation')
+    parser.add_argument('-p', '--preserve-temp', action='store_true', default=False, help='preserve temporary c file')
+    parser.add_argument('-g', '--generate-header', action='store_true', default=False, help='generate a c header file (as only output)')
     parser.add_argument('--version', action='store_true', help='print version info')
 
     args = parser.parse_args()
@@ -100,7 +105,10 @@ if __name__ == '__main__':
     if not args.input.endswith('.tic'):
         print(f"Error: File '{args.input}' is no .tic file")
         sys.exit(1)
-        
+    if not os.path.isdir(args.lib):
+        print(f"Error: The specified standard library \"{str(args.lib)}\" cannot be found")
+        sys.exit(1)
+
     if args.file == None:
         outfile = os.path.join(os.getcwd(), "bin", os.path.splitext(os.path.basename(args.input))[0])
     else:
@@ -112,5 +120,14 @@ if __name__ == '__main__':
     if not os.path.exists(args.compiler):
         print(f"Error: Compiler '{args.compiler}' not found")
         sys.exit(1)
-    
-    main(args.input, outfile, args.compiler, args.verbose, args.run, args.preserve_temp, args.generate_header)
+
+    main(
+        file=args.input,
+        output=outfile,
+        compiler=args.compiler,
+        verbose=args.verbose,
+        run=args.run,
+        preserve_temp=args.preserve_temp,
+        generate_header=args.generate_header,
+        stdlibpath=str(args.lib)
+    )
