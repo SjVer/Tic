@@ -1,7 +1,7 @@
 # Standard Library
 This is a list of all modules in Tic's standard library and their functions and variables. These modules can be imported using e.g. `Use math`, or `Use all` if you want to import all of them.
 
-### math
+## math
 #### Functions
 **pow**:  Takes two numbers, base and power. Returns the result.<br/>
 **sqrt**: Returns the square root of the given number.<br/>
@@ -15,7 +15,7 @@ This is a list of all modules in Tic's standard library and their functions and 
 **E**:   e = 2.718281… <br/>	
 **TAU**: τ = 6.283185… <br/>
 
-### file
+## file
 #### Functions
 **createfile**: Takes a path (string) and creates that file. <br/>
 **removefile**: Takes a path (string) and removes that file. <br/>
