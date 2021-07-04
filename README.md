@@ -65,6 +65,10 @@ The ticcomp compiler can be ran with a few different optional arguments:
 * `-p / --preserve-temp`      - preserves the temporary c file
 * `-g / --generate-header`    - generates the c header file for the script (as only output)
 
+### Tic's Course
+A series of tutorials on Tic is available at [this git repo's wiki](https://github.com/SjVer/Tic/wiki). <br/>
+It'll show you around Tic its syntax in 6 seperate chapters.
+
 ### Documentation
 The full documentation is [here](Documentation.md) <br/>
 Code examples can be found in the `test` directory.

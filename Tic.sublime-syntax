@@ -63,6 +63,8 @@ contexts:
       scope: variable.parameter # constant.character.escape.example-c #punctuation.definition.string.begin.example-c
       push:
       - meta_include_prototype: false
+      - match: '\b(constant|optional|)\b'
+        scope: variable.parameter
       - match: '\b(number|bool|string)\b'
         # scope: constant.character.escape.example-c
         scope: variable.parameter
@@ -88,20 +90,27 @@ contexts:
       set: use_name
 
     - match: 'Call'
-      scope: entity.other.attribute-name
+      scope: entity.other.inherited-class
+      # scope: entity.other.attribute-name
       set: call
+
+    - match: 'Return'
+      scope: entity.other.inherited-class
+      set: return
 
     - match: '\b(Label|GoTo)\b'
       scope: keyword
       set: label
 
-    - match: '\b(Declare|Set|Input|Print|PrintLine|StartWith|Exit|Break|EmitC|InclC)\b'
+    - match: '\b(Sleep|Declare|Set|Input|Print|PrintLine|StartWith|Exit|Break|EmitC|InclC|Raise)\b'
       scope: variable.function
 
   function_name:
     - meta_include_prototype: false
     # - meta_scope: entity.other.inherited-class
     - meta_scope: variable.function
+    - match: ' '
+      scope: entity.other.inherited-class
     - match: 'Does'
       scope: entity.other.inherited-class
       set: function_code
@@ -111,7 +120,7 @@ contexts:
 
   function_params:
     - meta_include_prototype: false
-    - include: hints
+    - include: includes
     - match: 'Does'
       scope: entity.other.inherited-class
       # pop: true
@@ -121,7 +130,15 @@ contexts:
     - include: includes
     - match: 'EndFunction'
       scope: entity.other.inherited-class
-      pop: true
+      # pop: true
+      set:
+        - match: 'Returning'
+          scope: entity.other.inherited-class
+          pop: true
+        - match: $\n?
+          pop: true
+        - match: \S
+          pop: true
 
   keywords:
     - match: '\b(If|Then|Else|ElseIf|EndIf|
@@ -143,10 +160,33 @@ contexts:
     - meta_scope: variable.function
     # - meta_scope: entity.other.attribute-name
     - match: 'With'
-      scope: entity.other.attribute-name
+      # scope: entity.other.attribute-name
+      scope: entity.other.inherited-class
       pop: true
     - match: $\n?
-      scope: entity.other.attribute-name
+      scope: entity.other.inherited-class
+      # scope: entity.other.attribute-name
+      pop: true
+
+  return:
+    - meta_include_prototype: false
+    - meta_scope: variable.function
+    # - meta_scope: entity.other.attribute-name
+    - match: 'With'
+      # scope: entity.other.attribute-name
+      scope: entity.other.inherited-class
+      set: returnTo
+    - match: 'To'
+      scope: entity.other.inherited-class
+      # scope: entity.other.attribute-name
+      pop: true
+
+  returnTo:
+    - include: includes
+    - meta_include_prototype: false
+    # - meta_scope: variable.function
+    - match: 'To'
+      scope: entity.other.inherited-class
       pop: true
 
   label:
@@ -173,10 +213,10 @@ contexts:
   inside_string:
     - meta_include_prototype: false
     - meta_scope: string.quoted.double.example-c
-    # - match: '\\.'
-      # scope: constant.character.escape.example-c
-    - match: \\
-      scope: invalid.illegal
+    - match: '\\.'
+      scope: constant.character.escape.example-c
+    # - match: \\
+      # scope: invalid.illegal
     - match: '"'
       scope: punctuation.definition.string.end.example-c
       pop: true
