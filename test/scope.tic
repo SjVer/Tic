@@ -4,7 +4,7 @@ scope and all subscopes *#
 
 Function my_function Does
 	Declare localnum = 2
-	#* variables declared in a function 
+	#* variables declared in a function
 	are only accessible there *#
 	PrintLine localnum
 

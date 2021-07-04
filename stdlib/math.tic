@@ -1,12 +1,20 @@
 # standard math module
 
 # constants
-Declare {number} PI = 3.14159265
+Declare {constant number} PI  = 3.1415926
+Declare {constant number} E   = 2.7182818
+Declare {constant number} TAU = 6.2831853
 
-# functions:
-# floor
-# round
-# ceil
+#*
+functions:
+- pow (num, num)
+- sqrt (num)
+- sin (num)
+- cos (num)
+- tan (num)
+- log (num)
+- round (num, num, [bool])
+*#
 
 Function pow Takes
 	{number} base, {number} power
@@ -54,4 +62,19 @@ Function log Takes {number} value Does
 	InclC "math.h"
 	Declare {number} result
 	EmitC "result = log(value);"
+EndFunction Returning result
+
+Function round Takes
+	{number} value, {number} decimals
+Does
+	Declare {number} result
+
+	# check if decimals is int
+	EmitC "if(decimals!=(int)decimals){"
+	Raise "round: Amound of decimals must be an integer"
+	EmitC "}"
+
+	# round
+	InclC "math.h"
+	EmitC "result = round(value*pow(10,decimals))/pow(10,decimals);"
 EndFunction Returning result

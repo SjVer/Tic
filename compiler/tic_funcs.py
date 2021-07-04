@@ -43,11 +43,14 @@ def funcPRINT(self, TokenType):
 			# self.emitter.emitLine(f"printf(\"%.3f\", {self.curToken.text});"+'}')
 			i = randStr(10)
 			a = randStr(10)
+			b = randStr(10)
 			self.emitter.emitLine("int "+i+"=1;")
 			self.emitter.emitLine("while(1){")
 			self.emitter.emitLine("float "+a+"="+self.curToken.text+"*powf(10,"+i+");")
-			self.emitter.emitLine("if("+a+"==(int)"+a+")")
-			self.emitter.emitLine("break;")
+			self.emitter.emitLine("float "+b+"=round("+a+");")
+			# self.emitter.emitLine("if("+a+"==(int)"+a+"){")
+			self.emitter.emitLine("if("+a+"=="+b+"){")
+			self.emitter.emitLine("break;}")
 			self.emitter.emitLine(i+"++;}")
 			self.emitter.emitLine("printf(\"%."+"*f\","+i+","+self.curToken.text+");}")
 
@@ -696,6 +699,9 @@ def funcCALL(self, TokenType, from_return=False):
 
 			if not (self.checkToken(vartype) or \
 				(self.checkToken(TokenType.IDENT) and self.checkVar(self.curToken.text, vartype))):
+				if not self.checkVar(self.curToken.text):
+					self.abort(("Return" if from_return else "Call")+": Variable \""+self.curToken.text+\
+						"\" has not been declared", self.curToken.line)
 				# not correct type or var with correct type
 				self.abort(("Return" if from_return else "Call")+": Parameter \""+argname+"\" needs to be of type " + \
 					vartype.name + ", not \"" + self.curToken.text +\
@@ -734,7 +740,7 @@ def funcCALL(self, TokenType, from_return=False):
 							argtype = curarg['type']
 							default = curarg['default']
 
-							if not default:
+							if default == "None":
 								if argtype == TokenType.STRING:
 									self.emitter.emit(',""')
 								elif argtype == TokenType.NUMBER:
@@ -773,72 +779,7 @@ def funcRETURN(self, TokenType):
 	self.emitter.startGetStr()
 
 	funcCALL(self, TokenType, True)
-	# self.emitter.emit('USR_'+funcname+'(')
 
-	# self.match(TokenType.IDENT)
-	# if not funcname in list(self.functionsDeclared) or \
-	# 	not self.functionsDeclared[funcname].doesreturn:
-	# 	self.abort('Return: Function '+funcname+' does not exist or does not return a value', self.curToken.line)
-
-	# argc = len(self.functionsDeclared[funcname].params)
-	# if argc == 0:
-	# 	self.match(TokenType.TO)
-	# 	self.emitter.emit(');')
-
-	# elif not self.checkToken(TokenType.WITH):
-	# 		self.abort('Return: Function '+funcname+' takes '+str(argc)+' arguments', self.curToken.line)
-	# else:
-	# 	givenargs = 0
-	# 	# handle args
-	# 	self.nextToken()
-	# 	for i in range(argc):
-	# 		# self.emitter.emit(self.curToken.text)
-	# 		argname = list(self.functionsDeclared[funcname].params)[i]
-	# 		vartype = self.functionsDeclared[funcname].params[argname]
-
-	# 		if not (self.checkToken(vartype) or \
-	# 			(self.checkToken(TokenType.IDENT) and self.checkVar(self.curToken.text, vartype))):
-	# 			# not correct type or var with correct type
-	# 			self.abort("Call: Parameter \""+argname+"\" needs to be of type " + \
-	# 				vartype.name + ", not \"" + self.curToken.text +\
-	# 				 '" (' + self.curToken.kind.name + ')', self.curToken.line)
-
-	# 		if self.checkToken(TokenType.STRING):
-	# 			self.emitter.emit('"'+self.curToken.text+'"')
-	# 			self.nextToken()
-	# 		elif self.checkToken(TokenType.BOOL):
-	# 			self.emitter.emit(self.curToken.text)
-	# 			self.nextToken()
-
-	# 		elif self.checkToken(TokenType.NUMBER, TokenType.IDENT):
-	# 			if self.atExpression():
-	# 				self.expression()
-
-	# 			# elif self.checkToken(TokenType.IDENT):
-	# 			else:
-	# 				self.emitter.emit(self.curToken.text)
-	# 				self.nextToken()
-
-	# 			# self.abort("Call: Parameter \""+argname+"\" needs to be of type " + \
-	# 				# self.functionsDeclared[funcname][argname].name + ", not " +\
-	# 				# self.curToken.kind.name + ' ("' + self.curToken.text.strip('\n') + '")', self.curToken.line)
-
-	# 		givenargs += 1
-
-	# 		if i < argc - 1:
-	# 			# self.match(TokenType.COMMA)
-	# 			if not self.checkToken(TokenType.COMMA):
-	# 				self.abort(f'Call: Expected {argc} arguments followed by a NEWLINE', self.curToken.line)
-	# 			self.emitter.emit(',')
-	# 			self.nextToken()
-	# 		else:
-	# 			break
-	
-	# if not self.checkToken(TokenType.TO):
-	# 	self.abort(f"Call: Expected {argc} arguments followed by \"To\", not {givenargs} followed by a {self.curToken.kind.name}.", self.curToken.line)
-	# self.nextToken()
-
-	# self.emitter.emitLine(');')
 	templine = self.emitter.finishGetStr()
 
 	self.nextToken()
@@ -848,6 +789,7 @@ def funcRETURN(self, TokenType):
 		self.abort('Return: Attempted to return to an undeclared variable: \"'+destvar+'"', self.curToken.line)
 	elif not self.checkVarMutability(destvar):
 		self.abort('Return: Attempted to return to a constant variable: \"'+destvar+'"', self.curToken.line)
+	
 	elif not self.checkVar(destvar, self.functionsDeclared[funcname].returntype):
 		self.abort('Return: Function "'+funcname+'" returns type '+self.functionsDeclared[funcname].returntype.name+\
 			' but destination variable "'+destvar+'" is of type '+self.getVarType(destvar).name, self.curToken.line)
@@ -1047,7 +989,8 @@ def funcEMITC(self, TokenType):
 	self.nextToken()
 	self.used_experimental = True
 	if self.checkToken(TokenType.STRING):
-		self.emitter.emitLine(self.curToken.text)
+		a = randStr(10)
+		self.emitter.emitLine(self.curToken.text.replace('\\\\', a).replace('\\', '').replace(a, '\\'))
 	else:
 		self.abort('EmitC: EmitC only takes a string, not \"'+self.curToken.text+"\"", self.curToken.line)
 	self.nextToken()
@@ -1058,3 +1001,18 @@ def funcINCLC(self, TokenType):
 	self.include(self.curToken.text, False)
 	self.match(TokenType.STRING)
 	self.used_experimental = True
+
+# "RAISE" STRING [NUMBER]
+def funcRAISE(self, TokenType):
+	self.nextToken()
+	self.emitter.emit('printf("\\033[1;31m')
+	self.emitter.emit(self.curToken.text)
+	self.emitter.emitLine('\\n\\033[0m");')
+	self.match(TokenType.STRING)
+	if self.checkToken(TokenType.NUMBER):
+		self.emitter.emit('exit(')
+		self.emitter.emit(self.curToken.text)
+		self.emitter.emitLine(');')
+		self.nextToken()
+	else:
+		self.emitter.emitLine('exit(1);')

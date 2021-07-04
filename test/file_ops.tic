@@ -1,0 +1,33 @@
+# example of how to read a file's contents
+Use file
+
+Declare {string} contents
+Declare {string} path = "atestfile.txt"
+
+# check if file exists:
+Declare {bool} exists
+
+Label check
+Return checkfile With path To exists
+
+If exists Then
+   PrintLine "file already exists"
+Else # create file
+   PrintLine "file does not yet exist"
+   Call createfile With path
+   GoTo check
+EndIf
+
+# write to file
+Call writefile With path, "test test!\n"
+
+# read file
+Return readfile With path To contents
+
+Print "contents of file \""
+Print path
+PrintLine "\":\n"
+Print contents
+
+# remove file
+Call removefile With path

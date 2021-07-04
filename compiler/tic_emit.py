@@ -60,8 +60,8 @@ class Emitter:
 			print(colored("EMIT HEADER", 'magenta')+": " + code)
 		self.header += code + '\n'
 
-	def includeLine(self, code):
-		if self.verbose:
+	def includeLine(self, code, silent = False):
+		if self.verbose and not silent:
 			print(colored("EMIT INCLUDE", 'magenta')+": " + code)
 		self.includes += code + '\n'
 

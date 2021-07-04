@@ -69,6 +69,9 @@ The ticcomp compiler can be ran with a few different optional arguments:
 The full documentation is [here](Documentation.md) <br/>
 Code examples can be found in the `test` directory.
 
+### Standard Library
+Tic comes with its own standard library. A list of all modules and their functions and variables can be found [here](Standard_Library.md).
+
 ### TicIDE
 The IDE for Tic. TicIDE can be downloaded from the releases page. <br/>
 See `Editor.md` for more information.

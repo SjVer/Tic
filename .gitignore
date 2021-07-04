@@ -5,3 +5,5 @@
 
 *.sublime-workspace
 *.sublime-project
+
+Makefile

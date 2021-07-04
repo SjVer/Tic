@@ -61,9 +61,13 @@ class Lexer:
                  
     # Return the next token.
     def getToken(self):
+        self.skipComment()
         self.skipWhitespace()
         self.skipComment()
+        self.skipWhitespace()
         token = None
+
+        # print('curchar: "'+self.curChar+'"')
 
         # Check the first character of this token to see if we can decide what it is.
         # If it is a multiple character operator (e.g., !=), number, identifier, or keyword then we will process the rest.
@@ -139,11 +143,16 @@ class Lexer:
             while self.curChar != '\"':
                 # Don't allow special characters in the string. No escape characters, newlines, tabs, or %.
                 # We will be using C's printf on this string.
-                if self.curChar == '\r' or self.curChar == '\n' or self.curChar == '\t' or self.curChar == '\\' or self.curChar == '%':
+                if self.curChar == '\r' or self.curChar == '\n' or self.curChar == '\t' or self.curChar == '%': # or self.curChar == '\\' 
                    self.abort("Illegal character in string: '" + self.curChar + "' at line "+str(self.linecount))
+                
+                elif self.curChar == "\\" and (self.peek() in ['"', "%"]):
+                    self.nextChar()
+                    # self.nextChar()
+
                 self.nextChar()
 
-            tokText = self.source[startPos : self.curPos] # Get the substring.
+            tokText = self.source[startPos : self.curPos]#.replace('\\', '\\') # Get the substring.
 
             token = Token(tokText, TokenType.STRING, self.oldtoken, self.linecount)
 
@@ -212,7 +221,8 @@ class Lexer:
                 
         else:
             # Unknown token!
-            self.abort("Unknown token: '" + self.curChar + "' at line: "+str(self.linecount))
+            self.abort("Unknown token: '" + self.curChar + "' at line: "+str(self.linecount+1) +\
+                "\n" +self.source.split('\n')[self.linecount])
 			
         self.nextChar()
         

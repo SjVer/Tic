@@ -118,6 +118,7 @@ class TokenType(enum.Enum):
     USE     = TokenTypeItem(Types.KEYWORD, 'Use',       func=funcUSE)
     EMITC   = TokenTypeItem(Types.KEYWORD, 'EmitC',     func=funcEMITC,     include=['stdlib', 'stdbool', 'stdio', 'string', 'math', 'ctype'])
     INCLC   = TokenTypeItem(Types.KEYWORD, 'InclC',     func=funcINCLC)
+    RAISE   = TokenTypeItem(Types.KEYWORD, 'Raise',     func=funcRAISE,     include=['stdio', 'stdlib'])
     # Operators
     EQ      = TokenTypeItem(Types.OPERATOR)
     PLUS    = TokenTypeItem(Types.OPERATOR)

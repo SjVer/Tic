@@ -55,6 +55,9 @@ class Parser:
 		self.prevToken = None
 		self.stmtToken = None
 
+		self.addVar('THIS_FILE', TokenType.STRING, True)
+		if not self.generating_header:
+			self.emitter.includeLine('#define THIS_FILE "'+self.sourcefile+'"', True)
 		self.includes.add('stdio')
 		self.emitter.includes += '#include <stdio.h>\n'
 		self.nextToken(doprint=False)
@@ -527,10 +530,10 @@ class Parser:
 			
 	# Return true if the current token is a comparison operator.
 	def isComparisonOperator(self) -> bool:
-		return (self.checkToken(TokenType.GT) or
-			self.checkToken(TokenType.GTEQ) or
-			self.checkToken(TokenType.LT) or
-			self.checkToken(TokenType.LTEQ) or
-			self.checkToken(TokenType.EQEQ) or
-			self.checkToken(TokenType.NOTEQ) )
+		return self.checkToken(TokenType.GT,\
+			TokenType.GTEQ,\
+			TokenType.LT,\
+			TokenType.LTEQ,\
+			TokenType.EQEQ,\
+			TokenType.NOTEQ)
 		
