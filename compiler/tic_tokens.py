@@ -81,6 +81,7 @@ class TokenType(enum.Enum):
     COMMA   = TokenTypeItem(Types.SYMBOL)
     BOOL    = TokenTypeItem(Types.SYMBOL,   include=['stdbool'])
     HINT    = TokenTypeItem(Types.SYMBOL,   include=['stdbool', 'string'])
+    # ACCESS  = TokenTypeItem(Types.SYMBOL)
     # Keywords
     LABEL   = TokenTypeItem(Types.KEYWORD, 'Label',     func=funcLABEL)
     GOTO    = TokenTypeItem(Types.KEYWORD, 'GoTo',      func=funcGOTO)
@@ -119,6 +120,13 @@ class TokenType(enum.Enum):
     EMITC   = TokenTypeItem(Types.KEYWORD, 'EmitC',     func=funcEMITC,     include=['stdlib', 'stdbool', 'stdio', 'string', 'math', 'ctype'])
     INCLC   = TokenTypeItem(Types.KEYWORD, 'InclC',     func=funcINCLC)
     RAISE   = TokenTypeItem(Types.KEYWORD, 'Raise',     func=funcRAISE,     include=['stdio', 'stdlib'])
+    CLASS   = TokenTypeItem(Types.KEYWORD, 'Class',     func=funcCLASS)
+    HAS     = TokenTypeItem(Types.KEYWORD, 'Has')
+    METH    = TokenTypeItem(Types.KEYWORD, 'Method')
+    ENDMETH = TokenTypeItem(Types.KEYWORD, 'EndMethod')
+    ENDCLASS= TokenTypeItem(Types.KEYWORD, 'EndClass')
+    INSTAN  = TokenTypeItem(Types.KEYWORD, 'Instance',  func=funcINSTAN)
+    OF      = TokenTypeItem(Types.KEYWORD, 'Of')
     # Operators
     EQ      = TokenTypeItem(Types.OPERATOR)
     PLUS    = TokenTypeItem(Types.OPERATOR)

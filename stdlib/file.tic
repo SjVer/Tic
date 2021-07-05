@@ -1,105 +1,83 @@
 # standard file module
 
-Function readfile Takes {string} path Does
+Function readfile Takes
+	{string} path 
+Does
 	# reads the contents of a file to a string
 	InclC "stdio.h"
 	InclC "stdlib.h"
 	InclC "errno.h"
 
-	Declare {string} FILE_MODULE_READFILE_buffer
+	Declare {string} buffer
 
-	EmitC "FILE *FILE_MODULE_READFILE_f = fopen(path, \"r\");"
+	EmitC "FILE *USR_f = fopen(USR_path, \"r\");"
 	EmitC "if (errno) {"
-	EmitC "perror(path);"
+	EmitC "perror(USR_path);"
 	Raise "File could not be read"
 	EmitC "}"
-	EmitC "fseek(FILE_MODULE_READFILE_f, 0, SEEK_END);"
-	EmitC "long FILE_MODULE_READFILE_length = ftell(FILE_MODULE_READFILE_f);"
-	EmitC "fseek(FILE_MODULE_READFILE_f, 0, SEEK_SET);"
-	EmitC "/* char * */FILE_MODULE_READFILE_buffer = (char *) malloc(FILE_MODULE_READFILE_length + 1);"
-	EmitC "FILE_MODULE_READFILE_buffer[FILE_MODULE_READFILE_length] = '\\0';"
-	EmitC "fread(FILE_MODULE_READFILE_buffer, 1, FILE_MODULE_READFILE_length, FILE_MODULE_READFILE_f);"
-	EmitC "fclose(FILE_MODULE_READFILE_f);"
-EndFunction Returning FILE_MODULE_READFILE_buffer
+	EmitC "fseek(USR_f, 0, SEEK_END);"
+	EmitC "long USR_length = ftell(USR_f);"
+	EmitC "fseek(USR_f, 0, SEEK_SET);"
+	EmitC "/* char * */USR_buffer = (char *) malloc(USR_length + 1);"
+	EmitC "USR_buffer[USR_length] = '\\0';"
+	EmitC "fread(USR_buffer, 1, USR_length, USR_f);"
+	EmitC "fclose(USR_f);"
+EndFunction Returning buffer
 
 Function writefile Takes
-	{string} path, {string} contents
+	{string} path,
+	{string} contents
 Does
 	# writes text to a file
 	InclC "stdio.h"
 	InclC "stdlib.h"
 	InclC "errno.h"
 
-	EmitC "FILE *FILE_MODULE_WRITEFILE_f;"
-	EmitC "FILE_MODULE_WRITEFILE_f = fopen(path, \"w+\");"
-	EmitC "if (FILE_MODULE_WRITEFILE_f) {"
-	EmitC "fputs(contents, FILE_MODULE_WRITEFILE_f); }"
+	EmitC "FILE *USR_f;"
+	EmitC "USR_f = fopen(USR_path, \"w+\");"
+	EmitC "if (USR_f) {"
+	EmitC "fputs(USR_contents, USR_f); }"
 	EmitC "else {"
 	Raise "File could not be written"
 	EmitC "}"
-	EmitC "fclose(FILE_MODULE_WRITEFILE_f);"
+	EmitC "fclose(USR_f);"
 EndFunction
 
-Function createfile Takes {string} path Does
+Function createfile Takes
+	{string} path
+Does
 	# creates a file
 	InclC "stdio.h"
 
-	EmitC "FILE *FILE_MODULE_CREATEFILE_f;"
-	EmitC "fopen(path, \"w\");"
-	#EmitC "fclose(FILE_MODULE_CREATEFILE_f);"
+	EmitC "FILE *USR_f;"
+	EmitC "fopen(USR_path, \"w\");"
+	#EmitC "fclose(USR_f);"
 EndFunction
 
-Function removefile Takes {string} path Does
+Function removefile Takes
+	{string} path
+Does
 	# removes a file
 	InclC "stdio.h"
 
-	EmitC "int FILE_MODULE_REMOVEFILE_ret;"
-	EmitC "FILE_MODULE_REMOVEFILE_ret = remove(path);"
-	EmitC "if (FILE_MODULE_REMOVEFILE_ret) {"
+	EmitC "int USR_ret;"
+	EmitC "USR_ret = remove(USR_path);"
+	EmitC "if (USR_ret) {"
 	Raise "Could not remove file"
 	EmitC "}"
 EndFunction
 
-Function checkfile Takes {string} path Does
+Function checkfile Takes
+	{string} path
+Does
 	# checks if a file exists
 	InclC "stdio.h"
 	InclC "unistd.h"
 
 	Declare {bool} exists
 
-	EmitC "if( access( path, F_OK ) == 0 ) {"
-	EmitC "exists = true;"
+	EmitC "if( access(USR_path, F_OK ) == 0 ) {"
+	EmitC "USR_exists = true;"
 	EmitC "}else{"
-	EmitC "exists = false;}"
+	EmitC "USR_exists = false;}"
 EndFunction Returning exists
-
-Declare {string} contents
-Declare {string} path = "atestfile.txt"
-
-# check if file exists:
-Declare {bool} exists
-
-Label check
-Return checkfile With path To exists
-
-If exists Then
-   PrintLine "file already exists"
-Else # create file
-   PrintLine "file does not yet exist"
-   Call createfile With path
-   GoTo check
-EndIf
-
-# write to file
-Call writefile With path, "test test!\n"
-
-# read file
-Return readfile With path To contents
-
-Print "contents of file \""
-Print path
-PrintLine "\":\n"
-Print contents
-
-# remove file
-Call removefile With path

@@ -23,10 +23,10 @@ class Lexer:
             self.curChar = self.source[self.curPos]
 
     # Return the lookahead character.
-    def peek(self):
-        if self.curPos + 1 >= len(self.source):
+    def peek(self, ahead=1):
+        if self.curPos + ahead >= len(self.source):
             return '\0'
-        return self.source[self.curPos + 1]
+        return self.source[self.curPos + ahead]
 
     # Invalid token found, print error message and exit.
     def abort(self, message):
@@ -115,6 +115,12 @@ class Lexer:
                 lastChar = self.curChar
                 self.nextChar()
                 token = Token(lastChar + self.curChar, TokenType.GTEQ, self.oldtoken, self.linecount)
+            
+            # elif self.peek() == '>':
+            #     # >>
+            #     self.nextChar()
+            #     token = Token('>>', TokenType.ACCESS, self.oldtoken, self.linecount)
+
             else:
                 token = Token(self.curChar, TokenType.GT, self.oldtoken, self.linecount)
                 
@@ -181,7 +187,13 @@ class Lexer:
             hintprops.emittext = DataTypes.getEmitText(tokText)
 
             token = Token(tokText, TokenType.HINT, self.oldtoken, self.linecount, hintprops)
-            
+  
+        # elif self.curChar == "'":
+        #     if self.peek() == 's' and self.peek(2) == ' ':
+        #         self.nextChar()       
+        #         self.nextChar()
+        #         token = Token("'s", TokenType.ACCESS, self.oldtoken, self.linecount)       
+
         elif self.curChar.isdigit():
             # Leading character is a digit, so this must be a number.
             # Get all consecutive digits and decimal if there is one.
@@ -205,7 +217,15 @@ class Lexer:
             # Leading character is a letter, so this must be an identifier or a keyword.
             # Get all consecutive alpha numeric characters.
             startPos = self.curPos
-            while self.peek().isalnum() or self.peek() == '_':
+            while self.peek().isalnum() or self.peek() == '_' or \
+                self.peek() == "'" and self.peek(2) == 's' and self.peek(3) == ' ':
+
+                if self.curChar == "'" and self.peek() == 's' and self.peek(2) == ' ':
+                    # access field or method
+                    self.nextChar()
+                    self.nextChar()
+                    self.nextChar()
+                
                 self.nextChar()
 
             # Check if the token is in the list of keywords.
@@ -219,7 +239,8 @@ class Lexer:
             else:   # Keyword
                 token = Token(tokText, keyword, self.oldtoken, self.linecount)
                 
-        else:
+        # else:
+        if not token:
             # Unknown token!
             self.abort("Unknown token: '" + self.curChar + "' at line: "+str(self.linecount+1) +\
                 "\n" +self.source.split('\n')[self.linecount])

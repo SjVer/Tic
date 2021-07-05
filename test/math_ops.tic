@@ -1,11 +1,11 @@
 # an example of how to use the math module
 Use math
 
-Declare {number} val = 1.12345
+Declare {number} value = 1.12345
 Declare {number} dec = 3
 Declare {number} res
 
-Return round With val, dec To res
+Return round With value, dec To res
 
 PrintLine res
 

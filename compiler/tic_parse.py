@@ -3,22 +3,11 @@ from tic_lex import *
 from tic_tokens import Types
 from copy import deepcopy
 from termcolor import colored
+from tic_funcs import VarProperties, FuncPropterties
 
 class Scope:
 	def __init__(self, variables: dict = {}):
 		self.variablesDeclared = variables
-
-class VarProperties:
-	def __init__(self, vartype: TokenType, mutable: bool):
-		self.type: TokenType = vartype
-		self.mutable: bool = mutable
-
-class FuncPropterties:
-	def __init__(self, params: dict, optargc: int, doesreturn: bool, returntype: TokenType = None):
-		self.params: dict = params
-		self.optargc: int = optargc
-		self.doesreturn: bool = doesreturn
-		self.returntype: TokenType = returntype
 
 # Parser object keeps track of current token and checks if the code matches the grammar.
 class Parser:
@@ -39,6 +28,22 @@ class Parser:
 		self.labelsGotoed = set()   # Labels goto'ed so far.
 
 		self.functionsDeclared = {} # key is name and value is amount of args and their types
+		self.classesDeclared = {}
+		# {
+		#	"name": {
+		#		"fields": {
+		# 			"name": type,
+		#			...
+		# 		},
+		#		"methods": {
+		#			"name": {
+		# 				"props": functionproperties,
+		#			},	
+		#			...
+		#		}
+		#	},
+		#	...
+		# }
 
 		self.parsing_function = False
 		self.parsing_loop = False
@@ -77,12 +82,14 @@ class Parser:
 				return True
 		return False
 
+	# stuff
 	def checkType(self, *types) -> bool:
 		for toktype in types:
 			if self.curToken.kind.value.type == toktype:
 				return True
 		return False
 
+	# stuff
 	def checkPeekType(self, *types) -> bool:
 		for toktype in types:
 			if self.peekToken.kind.value.type == toktype:
@@ -111,8 +118,8 @@ class Parser:
 		return self.variablesDeclared.copy()
 
 	# Adds a variable to the current scope
-	def addVar(self, varname, kind, const) -> None:
-		props = VarProperties(kind, const)
+	def addVar(self, varname, kind, const, isfield=False, classname=False) -> None:
+		props = VarProperties(kind, const, isfield, classname)
 		if self.curscope:
 			self.curscope.variablesDeclared[varname] = props
 		else:
@@ -126,6 +133,18 @@ class Parser:
 			return self.curscope.variablesDeclared[varname].type
 		return self.variablesDeclared[varname].type
 
+	# gets emitstring of var
+	def getVarStr(self, varname):
+		if not self.checkVar(varname):
+			return False
+		if "self's " in varname:
+			return varname.replace("self's ", 'CURRENTINSTANCEFIELD_')
+		if "'s " in varname:
+			classname = self.getVars()[varname].classname
+			return varname.replace("'s ", "___INSTANCEOF_" + classname + '_CLASS___')
+		return 'USR_'+varname
+
+	# checks mutability of var
 	def checkVarMutability(self, varname):
 		if not self.checkVar(varname):
 			return False
@@ -133,6 +152,7 @@ class Parser:
 			return self.curscope.variablesDeclared[varname].mutable
 		return self.variablesDeclared[varname].mutable
 
+	# adds function to declared functions
 	def addFunc(self, name, funcargs, optargc, doesreturn, returntype):
 		props = FuncPropterties(funcargs, optargc, doesreturn)
 		if doesreturn:
@@ -366,7 +386,7 @@ class Parser:
 				if self.checkToken(TokenType.STRING):
 					self.emitter.emit("\""+self.curToken.text+"\"")
 				elif self.checkToken(TokenType.IDENT):
-					self.emitter.emit(self.curToken.text)
+					self.emitter.emit(self.getVarStr(self.curToken.text))
 
 				self.emitter.emit(',')
 				self.nextToken() # the == or !=
@@ -375,7 +395,7 @@ class Parser:
 				if self.checkToken(TokenType.STRING):
 					self.emitter.emit("\""+self.curToken.text+"\"")
 				elif self.checkToken(TokenType.IDENT):
-					self.emitter.emit(self.curToken.text)
+					self.emitter.emit(self.getVarStr(self.curToken.text))
 				self.emitter.emit(')==0)' if eqeq else ')!=0)')
 				self.nextToken()
 
@@ -385,7 +405,7 @@ class Parser:
 				if self.checkToken(TokenType.STRING):
 					self.emitter.emit("\""+self.curToken.text+"\"")
 				elif self.checkToken(TokenType.IDENT):
-					self.emitter.emit(self.curToken.text)                
+					self.emitter.emit(self.getVarStr(self.curToken.text))                
 				self.emitter.emit(",\"\")!=0)")
 				self.nextToken()
 
@@ -393,7 +413,7 @@ class Parser:
 
 		# if the comparison is just a bool use it
 		elif self.checkVar(self.curToken.text, TokenType.BOOL):
-			self.emitter.emit(self.curToken.text)
+			self.emitter.emit(self.getVarStr(self.curToken.text))
 			self.nextToken()
 			if self.checkToken(TokenType.THEN):
 				return
@@ -512,7 +532,7 @@ class Parser:
 				self.abort(f'Variable "{self.curToken.text}" in expression must be of type NUMBER or BOOL, not ' + \
 					self.getVarType(self.curToken.text).name, self.curToken.line)
 
-			self.emitter.emit(self.curToken.text)
+			self.emitter.emit(self.getVarStr(self.curToken.text))
 
 			self.nextToken()
 

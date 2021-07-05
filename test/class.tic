@@ -1,0 +1,29 @@
+# an example of a class
+Class myclass Has
+	# fields go here
+	{string} name,
+	{number} age
+Does
+	# methods go here
+	Method talk Does
+		Print "Hey! My name is "
+		Print self's name
+		Print " and I am "
+		Print self's age
+		Print " years old.\n"
+	EndMethod
+EndClass
+
+Instance myinstance Of myclass
+
+Print "Enter your person's name: "
+Input myinstance's name
+Print "Enter "
+Print myinstance's name
+Print "'s age: "
+Input myinstance's age
+
+Call myinstance's talk
+
+
+

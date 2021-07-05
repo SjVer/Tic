@@ -32,7 +32,6 @@ Call mysecondfunc With mynum, mybool
 
 
 
-
 Function returnfunc Takes
 	{number} a
 Does

@@ -25,6 +25,7 @@ contexts:
     # - include: variables
     - include: operators
     - include: functions
+    - include: comments
 
   main:
     # The main context is the initial starting point of our syntax.
@@ -42,12 +43,13 @@ contexts:
   operators:
     - match: (?:\+\+|--)
       scope: keyword.operator.arithmetic.c
-    - match: '->'
-      scope: punctuation.accessor.c
+    - match: "'s "
+      scope: keyword.operator.c
+      # scope: punctuation.accessor.c
     #- match: \+\=|-\=|\*\=|/\=|%\=|&\=|\|\=|\^\=|>>\=|<<\=
     #  scope: keyword.operator.assignment.augmented.c
-    - match: <<|>>|&&|\|\|
-      scope: keyword.operator.arithmetic.c
+    # (?# - match: <<|>>|&&|\|\|)
+      # scope: keyword.operator.arithmetic.c
     - match: <\=|>\=|\=\=|<|>|\!\=
       scope: keyword.operator.comparison.c
     - match: \+|\-|/|%|\||\^|~|!
@@ -85,6 +87,13 @@ contexts:
       # set: [function_name, functions_block]
       set: function_name
 
+    - match: 'Class'
+      scope: entity.other.inherited-class
+      set: class_name
+
+    - match: 'EndClass'
+      scope: entity.other.inherited-class
+
     - match: 'Use'
       scope: variable.function
       set: use_name
@@ -93,6 +102,10 @@ contexts:
       scope: entity.other.inherited-class
       # scope: entity.other.attribute-name
       set: call
+
+    - match: 'Instance'
+      scope: entity.other.inherited-class
+      set: instance
 
     - match: 'Return'
       scope: entity.other.inherited-class
@@ -128,6 +141,9 @@ contexts:
 
   function_code:
     - include: includes
+    - match: 'self'
+      scope: variable.parameter
+      # scope: keyword
     - match: 'EndFunction'
       scope: entity.other.inherited-class
       # pop: true
@@ -139,6 +155,40 @@ contexts:
           pop: true
         - match: \S
           pop: true
+
+  class_name:
+    - meta_include_prototype: false
+    # - meta_scope: entity.other.inherited-class
+    - meta_scope: variable.function
+    - match: ' '
+      scope: entity.other.inherited-class
+    - match: 'Does'
+      scope: entity.other.inherited-class
+      set: class_code
+    - match: 'Has'
+      scope: entity.other.inherited-class
+      set: class_fields
+
+  class_fields:
+    - meta_include_prototype: false
+    - include: includes
+    - match: 'Does'
+      scope: entity.other.inherited-class
+      # pop: true
+      set: class_code
+    - match: 'EndClass'
+      scope: entity.other.inherited-class
+      pop: true
+
+  class_code:
+    - include: includes
+    - match: 'Function'
+      scope: entity.other.inherited-class
+      set: function_name
+
+    - match: 'EndClass'
+      scope: entity.other.inherited-class
+      pop: true
 
   keywords:
     - match: '\b(If|Then|Else|ElseIf|EndIf|
@@ -159,6 +209,8 @@ contexts:
     - meta_include_prototype: false
     - meta_scope: variable.function
     # - meta_scope: entity.other.attribute-name
+    - match: "'s "
+      scope: keyword.operator.c
     - match: 'With'
       # scope: entity.other.attribute-name
       scope: entity.other.inherited-class
@@ -167,6 +219,24 @@ contexts:
       scope: entity.other.inherited-class
       # scope: entity.other.attribute-name
       pop: true
+
+  instance:
+    - meta_include_prototype: false
+    # - meta_scope: variable.function
+    # - meta_scope: entity.other.attribute-name
+    - match: 'Of'
+      # scope: entity.other.attribute-name
+      scope: entity.other.inherited-class
+      # pop: true
+      set:
+        - meta_include_prototype: false
+        - meta_scope: variable.function
+        - match: $\n?
+          pop: true
+    #- match: $\n?
+      # scope: entity.other.inherited-class
+      # scope: entity.other.attribute-name
+      # pop: true
 
   return:
     - meta_include_prototype: false

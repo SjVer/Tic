@@ -37,31 +37,31 @@ EndFunction Returning result
 Function sqrt Takes {number} value Does
 	InclC "math.h"
 	Declare {number} result
-	EmitC "result = sqrt((double)value);"
+	EmitC "USR_result = sqrt((double)USR_value);"
 EndFunction Returning result
 
 Function sin Takes {number} value Does
 	InclC "math.h"
 	Declare {number} result
-	EmitC "result = sin(value);"
+	EmitC "USR_result = sin(USR_value);"
 EndFunction Returning result
 
 Function cos Takes {number} value Does
 	InclC "math.h"
 	Declare {number} result
-	EmitC "result = cos(value);"
+	EmitC "USR_result = cos(USR_value);"
 EndFunction Returning result
 
 Function tan Takes {number} value Does
 	InclC "math.h"
 	Declare {number} result
-	EmitC "result = tan(value);"
+	EmitC "USR_result = tan(USR_value);"
 EndFunction Returning result
 
 Function log Takes {number} value Does
 	InclC "math.h"
 	Declare {number} result
-	EmitC "result = log(value);"
+	EmitC "USR_result = log(USR_value);"
 EndFunction Returning result
 
 Function round Takes
@@ -70,11 +70,11 @@ Does
 	Declare {number} result
 
 	# check if decimals is int
-	EmitC "if(decimals!=(int)decimals){"
+	EmitC "if(USR_decimals!=(int)USR_decimals){"
 	Raise "round: Amound of decimals must be an integer"
 	EmitC "}"
 
 	# round
 	InclC "math.h"
-	EmitC "result = round(value*pow(10,decimals))/pow(10,decimals);"
+	EmitC "USR_result = round(USR_value*pow(10,USR_decimals))/pow(10,USR_decimals);"
 EndFunction Returning result

@@ -1,15 +1,35 @@
 from tic_lex import *
 import random, string, tempfile, sys, os
 from termcolor import colored
-# from tic_parse import FuncPropterties, VarProperties
+# from tic_imports import FuncPropterties, VarProperties
 # from tokens import DataTypes
+
+class VarProperties:
+	def __init__(self, vartype, mutable: bool, isfield=False, classname=False):
+		self.type = vartype
+		# self.emittext = emittext
+		self.isfield = isfield
+		self.classname = classname
+		self.mutable: bool = mutable
+
+class FuncPropterties:
+	def __init__(self, params: dict, optargc: int, 
+		doesreturn: bool, returntype = None, 
+		ismethod = False, classname=False):
+
+		self.params: dict = params
+		self.optargc: int = optargc
+		self.doesreturn: bool = doesreturn
+		self.returntype = returntype
+		self.ismethod = ismethod
+		self.classname = classname
 
 def randStr(N):
 	# generates a random string of length N
 	return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(N))
 
 # "PRINT" (expression | string)
-def funcPRINT(self, TokenType):
+def funcPRINT(self, TokenType, from_printline=False):
 	self.nextToken()
 
 	if self.checkToken(TokenType.STRING):
@@ -27,18 +47,19 @@ def funcPRINT(self, TokenType):
 		
 		# check if defined
 		if not self.checkVar(self.curToken.text):
-			self.abort(f"Print: Attempted to print undeclared variable '{self.curToken.text}'", self.curToken.line)
+			self.abort("Print"+("Line" if from_printline else "")+\
+				f": Attempted to print undeclared variable '{self.curToken.text}'", self.curToken.line)
 		
 		# detect variable type and emit based off that
 		if self.checkVar(self.curToken.text, TokenType.STRING):
 			# var contains string
-			self.emitter.emitLine("printf(\"%" + f"s\", {self.curToken.text});")
+			self.emitter.emitLine("printf(\"%" + f"s\", {self.getVarStr(self.curToken.text)});")
 
 		elif self.checkVar(self.curToken.text, TokenType.NUMBER):
 			# var contains number
 			# the emitted code checks if number is int or float and prints accordingly
-			self.emitter.emitLine(f"if(roundf({self.curToken.text}) == {self.curToken.text})"+'{')
-			self.emitter.emitLine(f"printf(\"%d\", (int){self.curToken.text});")
+			self.emitter.emitLine(f"if(roundf({self.getVarStr(self.curToken.text)}) == {self.getVarStr(self.curToken.text)})"+'{')
+			self.emitter.emitLine(f"printf(\"%d\", (int){self.getVarStr(self.curToken.text)});")
 			self.emitter.emitLine("}else{")
 			# self.emitter.emitLine(f"printf(\"%.3f\", {self.curToken.text});"+'}')
 			i = randStr(10)
@@ -46,16 +67,16 @@ def funcPRINT(self, TokenType):
 			b = randStr(10)
 			self.emitter.emitLine("int "+i+"=1;")
 			self.emitter.emitLine("while(1){")
-			self.emitter.emitLine("float "+a+"="+self.curToken.text+"*powf(10,"+i+");")
+			self.emitter.emitLine("float "+a+"="+self.getVarStr(self.curToken.text)+"*powf(10,"+i+");")
 			self.emitter.emitLine("float "+b+"=round("+a+");")
 			# self.emitter.emitLine("if("+a+"==(int)"+a+"){")
 			self.emitter.emitLine("if("+a+"=="+b+"){")
 			self.emitter.emitLine("break;}")
 			self.emitter.emitLine(i+"++;}")
-			self.emitter.emitLine("printf(\"%."+"*f\","+i+","+self.curToken.text+");}")
+			self.emitter.emitLine("printf(\"%."+"*f\","+i+","+self.getVarStr(self.curToken.text)+");}")
 
 		elif self.checkVar(self.curToken.text, TokenType.BOOL):
-			self.emitter.emitLine("printf(\"%" + f"s\", {self.curToken.text}?\"true\":\"false\");")
+			self.emitter.emitLine("printf(\"%" + f"s\", {self.getVarStr(self.curToken.text)}?\"true\":\"false\");")
 		# self.emitter.emitLine("char *string = (char *)" + self.curToken.text + ";")
 		# self.emitter.emitLine("printf(\"%" + "s\", " + "string" + ");")
 		self.nextToken()
@@ -87,7 +108,7 @@ def funcPRINT(self, TokenType):
 
 # "PRINTLN" (expression | string)
 def funcPRINTLN(self, TokenType):
-	funcPRINT(self, TokenType)
+	funcPRINT(self, TokenType, True)
 	self.emitter.emitLine('printf(\"\\n\");')
 
 # "IF" (comparison ["OR" comparison]) "THEN" block "ENDIF"		
@@ -174,7 +195,7 @@ def funcSET(self, TokenType):
 	if not self.checkVar(varname):
 		print(list(self.getVars()))
 		self.abort(f"Set: Variable \"{varname}\" not declared", self.curToken.line)
-	self.emitter.emit(varname + ' = ')
+	self.emitter.emit(self.getVarStr(varname) + ' = ')
 
 	vartype = self.getVarType(varname)
 	mutable = self.checkVarMutability(varname)
@@ -186,16 +207,18 @@ def funcSET(self, TokenType):
 
 	# check if type is correct (excuse idents)
 	if self.curToken.kind != self.getVarType(varname) and not self.checkToken(TokenType.IDENT):
-		self.abort('Set: Attempted to assign a ' + self.curToken.kind.name.lower() + ' to a variable declared with type ' + self.getVarType(varname).name.lower() + f' ({self.curToken.text} to {varname})', self.curToken.line)
+		self.abort('Set: Attempted to assign a ' + \
+			self.curToken.kind.name.lower() + ' to a variable declared with type ' + \
+			self.getVarType(varname).name.lower() + f' ({self.curToken.text} to {varname})', self.curToken.line)
 
 	# emit shit
 	if self.getVarType(varname) == TokenType.STRING:
-		self.emitter.emit("\"" + self.curToken.text + "\";")
+		self.emitter.emitLine("\"" + self.curToken.text + "\";")
 		self.match(self.getVarType(varname))
 		# self.nextToken()
 
 	elif self.getVarType(varname) != TokenType.NUMBER:
-		self.emitter.emit(self.curToken.text + ';')
+		self.emitter.emitLine(self.curToken.text + ';')
 		self.match(self.getVarType(varname))
 		# self.nextToken()
 
@@ -206,9 +229,9 @@ def funcSET(self, TokenType):
 		if self.atExpression():
 			# expression
 			self.expression()
-			self.emitter.emit(';')
+			self.emitter.emitLine(';')
 		else:
-			self.emitter.emit(self.curToken.text + ';')
+			self.emitter.emitLine(self.curToken.text + ';')
 			self.match(TokenType.NUMBER)
 			# self.nextToken()
 
@@ -246,8 +269,10 @@ def funcDECLARE(self, TokenType):
 		self.nextToken()
 
 	varname = self.curToken.text
+	if "'s " in varname:
+		self.abort("Declare: Cannot declare fields of an instance", self.curToken.line)
 	##  self.emitter.emit(varname)
-	templine += varname
+	templine += 'USR_' + varname
 	self.match(TokenType.IDENT, False)
 
 	if not ishinted or isconstant:
@@ -339,6 +364,7 @@ def funcINPUT(self, TokenType):
 	self.nextToken()
 
 	varname = self.curToken.text
+	varstr = self.getVarStr(varname)
 
 	# check variable exists else abort
 	if not self.checkVar(varname):
@@ -348,13 +374,13 @@ def funcINPUT(self, TokenType):
 
 	# generate the right scanf format for each data type
 	if vartype == TokenType.NUMBER:
-		self.emitter.emitLine("scanf(\"%" + "f\", &" + varname + ");")
+		self.emitter.emitLine("scanf(\"%" + "f\", &" + varstr + ");")
 
 	elif vartype == TokenType.STRING:
 		tempstr = randStr(10)
 		self.emitter.emitLine("char "+tempstr+"[1000];")
 		self.emitter.emitLine("scanf(\"%" + f"s\", &{tempstr});")
-		self.emitter.emitLine(varname+"="+tempstr+";")
+		self.emitter.emitLine(varstr+"="+tempstr+";")
 		# self.emitter.emitLine("scanf(\"%" + "s\", " + varname + ");")
 
 	elif vartype == TokenType.BOOL:
@@ -372,9 +398,9 @@ def funcINPUT(self, TokenType):
 		self.emitter.emitLine(f"{tempvar}[{tempint}] = tolower({tempvar}[{tempint}]);"+"}")
 		# the rest (compare the lowercase input with 'true' and return true if they are the same, else false)
 		self.emitter.emitLine(f"if(strcmp({tempvar}, \"true\")==0)"+"{")
-		self.emitter.emitLine(varname + "=true;")
+		self.emitter.emitLine(varstr + "=true;")
 		self.emitter.emitLine("}else{")
-		self.emitter.emitLine(varname + "=false;}")
+		self.emitter.emitLine(varstr + "=false;}")
 
 	self.match(TokenType.IDENT)
 
@@ -396,7 +422,7 @@ def funcEXIT(self, TokenType):
 			
 	elif self.checkToken(TokenType.IDENT):
 		# ident
-		self.emitter.emitLine("exit(" + self.curToken.text + ");")
+		self.emitter.emitLine("exit(" + self.getVarStr(self.curToken.text) + ");")
 		self.nextToken()
 	else:
 		self.abort(f"Exit: Expected numeric exit code, not '{self.curToken.text}' ({self.curToken.kind.name})", self.curToken.line)
@@ -421,7 +447,7 @@ def funcFOR(self, TokenType):
 	else:
 		self.abort('For: Variable \"'+forvar+"\" is already declared and not of type NUMBER")
 
-	self.emitter.emit(("int " if isnewforvar else "") + forvar + '=')
+	self.emitter.emit(("int " if isnewforvar else "") + self.getVarStr(forvar) + '=')
 
 	self.nextToken()
 	self.match(TokenType.COMMA, False)
@@ -445,7 +471,7 @@ def funcFOR(self, TokenType):
 				self.expression()
 			else:
 				# ident
-				self.emitter.emit(self.curToken.text)
+				self.emitter.emit(self.getVarStr(self.curToken.text))
 				self.nextToken()
 
 		else:
@@ -454,9 +480,9 @@ def funcFOR(self, TokenType):
 		if i < 2:
 			self.match(TokenType.COMMA, False)
 			if i == 0:
-				self.emitter.emit(';' + forvar + '<=')
+				self.emitter.emit('; USR_' + forvar + '<=')
 			else:
-				self.emitter.emit(';' + forvar + '+=')
+				self.emitter.emit('; USR_' + forvar + '+=')
 		else:
 			self.match(TokenType.DO)
 			self.nl()
@@ -471,7 +497,7 @@ def funcFOR(self, TokenType):
 	self.parsing_loop = False
 	self.emitter.emitLine("}")
 	self.upScope()
-		
+
 # "SLEEP" (expression | number | ident)
 def funcSLEEP(self, TokenType):
 	self.nextToken()
@@ -490,13 +516,13 @@ def funcSLEEP(self, TokenType):
 			
 	elif self.checkToken(TokenType.IDENT):
 		# ident
-		self.emitter.emitLine("sleep(" + self.curToken.text + ");")
+		self.emitter.emitLine("sleep(" + self.getVarStr(self.curToken.text) + ");")
 		self.nextToken()
 	else:
 		self.abort(f"Sleep: Expected number or expression, not '{self.curToken.text}' ({self.curToken.kind.name})", self.curToken.line)
 
 # "FUNC" ident ["TAKES" (idents)] "DOES" block "ENDFUNC"
-def funcFUNCTION(self, TokenType):
+def funcFUNCTION(self, TokenType, inclass=False, classname=None, classdict=None):
 	self.nextToken()
 
 	if self.generating_header:
@@ -505,13 +531,35 @@ def funcFUNCTION(self, TokenType):
 
 	funcscope = self.downScope()
 
-	self.emitter.emit('VARGOHERE USR_' + self.curToken.text + '(')
+	if inclass:
+		for field in classdict['fields']:
+			self.addVar("self's " + field, classdict['fields'][field].type, \
+				not classdict['fields'][field].mutable)
+		# self.emitter.startGetStr()
+
+	self.emitter.emit('VARGOHERE USR_' +(classname + "_METHOD_" if inclass else "") +self.curToken.text + '(')
 	name = self.curToken.text
 
 	doesreturn = False
 	hasargs = False
 	funcargs = {}
 	optargc = 0
+
+	# pass class fields if parsing method
+	if inclass and classdict['fields'] != {}:
+		for field in classdict['fields']:
+
+			vartype = classdict['fields'][field].type
+			if vartype == TokenType.STRING:
+				self.emitter.emit('char *')
+			elif vartype == TokenType.NUMBER:
+				self.emitter.emit('float ')
+			elif vartype == TokenType.BOOL:
+				self.emitter.emit('bool ')
+
+			self.emitter.emit('CURRENTINSTANCEFIELD_'+field)
+			if field != list(classdict['fields'])[-1]:
+				self.emitter.emit(',')
 
 	# Make sure this function doesn't already exist.
 	if self.curToken.text in self.functionsDeclared:
@@ -546,7 +594,9 @@ def funcFUNCTION(self, TokenType):
 			self.nextToken()
 			self.match(TokenType.IDENT, False)
 
-			self.emitter.emit(vartoken.hintprops.emittext + " " + self.curToken.text)
+			if inclass and classdict['fields'] != {}:
+				self.emitter.emit(',')
+			self.emitter.emit(vartoken.hintprops.emittext + " USR_" + self.curToken.text)
 
 			# if optional param only optional params can follow
 			if optgiven and not vartoken.hintprops.opt:
@@ -590,21 +640,23 @@ def funcFUNCTION(self, TokenType):
 				self.match(TokenType.DOES, False)
 				break
 
-		self.emitter.emit('){\n');
+		self.emitter.emitLine('){');
 
-	else:
+	elif (not inclass) or (classdict['fields'] == {}):
 		# no vars
 		# self.emitter.function('void) {\n')
-		self.emitter.emit('void) {\n')
+		self.emitter.emitLine('void) {')
+	else:
+		self.emitter.emitLine('){')
 
 	self.match(TokenType.DOES)
 	self.nl()
 
 	# Zero or more statements in the function body.
-	while not self.checkToken(TokenType.ENDFUNC):
+	while not self.checkToken(TokenType.ENDMETH if inclass else TokenType.ENDFUNC):
 		self.statement()
 
-	self.match(TokenType.ENDFUNC)
+	self.match(TokenType.ENDMETH if inclass else TokenType.ENDFUNC)
 
 	if self.checkToken(TokenType.FRETURN):
 		doesreturn = True
@@ -612,7 +664,7 @@ def funcFUNCTION(self, TokenType):
 		self.nextToken()
 		self.match(TokenType.IDENT, False)
 		if not self.checkVar(self.curToken.text):
-			self.abort("Returning: Attempted to return a undeclared variable: \""+self.curToken.text+'"')
+			self.abort("Returning: Attempted to return a undeclared variable: \""+self.curToken.text+'"', self.curToken.line)
 		
 		retvar = self.curToken.text
 		vartype = self.getVarType(self.curToken.text)
@@ -632,15 +684,25 @@ def funcFUNCTION(self, TokenType):
 	if self.generating_header:
 		self.emitter.functions = \
 			self.emitter.functions.replace('VARGOHERE USR_'+name, varstr + ' USR_'+name)
+	elif inclass:
+		self.emitter.code = \
+			self.emitter.code.replace('VARGOHERE USR_'+classname+'_METHOD_'+name,\
+				varstr + ' USR_'+classname+'_METHOD_'+name)
+
 	else:
 		self.emitter.code = \
 			self.emitter.code.replace('VARGOHERE USR_'+name, varstr + ' USR_'+name)
 
 	if doesreturn:
-		self.emitter.emitLine('return('+retvar+');')
+		self.emitter.emitLine('return(USR_'+retvar+');')
 	self.emitter.emitLine('} // END OF FUNCTION '+name)
 
-	self.addFunc(name, funcargs, optargc, doesreturn, (vartype if doesreturn else None))
+	if inclass:
+		classdict['methods'][name] = {'props': FuncPropterties(
+			funcargs, optargc, doesreturn, (vartype if doesreturn else None),
+			True, classname)}
+	else:
+		self.addFunc(name, funcargs, optargc, doesreturn, (vartype if doesreturn else None))
 
 	# self.functionsDeclared[name] = funcprops
 	self.upScope()
@@ -648,6 +710,10 @@ def funcFUNCTION(self, TokenType):
 	if self.generating_header:
 		self.emitter.override_emit_to_func = False
 		self.parsing_function = False
+
+	# if inclass:
+		# classdict['methods'][name]['code'] = self.emitter.finishGetStr()
+		# return self.emitter.finishGetStr()
 
 # "CALL" ident ["WITH" ident ["COMMA" ident etc...]]
 def funcCALL(self, TokenType, from_return=False):
@@ -659,12 +725,27 @@ def funcCALL(self, TokenType, from_return=False):
 	params = self.functionsDeclared[self.curToken.text].params
 	optargc = self.functionsDeclared[self.curToken.text].optargc
 	doesreturn = self.functionsDeclared[self.curToken.text].doesreturn
+	ismethod = self.functionsDeclared[self.curToken.text].ismethod
+	classname = self.functionsDeclared[self.curToken.text].classname
+	
 	if from_return and not doesreturn:
 		self.abort("Return: Function \""+self.curToken.text+'" does not return a value', self.curToken.line)
 
 	argsamount = len(list(params))
 	funcname = self.curToken.text
-	self.emitter.emit("USR_"+self.curToken.text + "(")
+
+	if ismethod:
+		instname = funcname.split("'s ")[0]
+
+		self.emitter.emit("USR_"+classname+"_METHOD_"+self.curToken.text.split("'s ")[1]+'(')
+		for field in self.classesDeclared[classname]['fields']:
+			fielddict = self.classesDeclared[classname]['fields']
+			self.emitter.emit(instname + "___INSTANCEOF_"+classname+"_CLASS___"+field)
+			if field != list(self.classesDeclared[classname]['fields'])[-1]:
+				self.emitter.emit(',')
+
+	else:
+		self.emitter.emit("USR_"+self.curToken.text + "(")
 	self.nextToken()
 
 	givenargs = 0
@@ -720,7 +801,10 @@ def funcCALL(self, TokenType, from_return=False):
 
 				# elif self.checkToken(TokenType.IDENT):
 				else:
-					self.emitter.emit(self.curToken.text)
+
+					self.emitter.emit(self.getVarStr(self.curToken.text) \
+						if self.checkToken(TokenType.IDENT)\
+						else self.curToken.text)
 					self.nextToken()
 
 			givenargs += 1
@@ -796,9 +880,9 @@ def funcRETURN(self, TokenType):
 
 	self.match(TokenType.IDENT)
 
-	self.emitter.emitLine(destvar + '=' + templine)
+	self.emitter.emitLine('USR_' + destvar + '=' + templine)
 
-# "StartWith HINT IDENT, etc..
+# "STARTW" hint ident, etc..
 def funcSTARTW(self, TokenType):
 	self.nextToken()
 
@@ -820,7 +904,7 @@ def funcSTARTW(self, TokenType):
 			vartype = TokenType.BOOL
 
 		self.match(TokenType.HINT)
-		self.emitter.emitMainArg(self.curToken.text)
+		self.emitter.emitMainArg('USR_'+self.curToken.text)
 		self.emitter.maincallargs.append(self.curToken.text)
 		# self.variablesDeclared[self.curToken.text] = vartype
 		self.addVar(self.curToken.text, vartype, True)
@@ -849,7 +933,7 @@ def funcSTARTW(self, TokenType):
 		self.match(TokenType.COMMA)
 		handlevar()
 
-# "USE" (IDENT | STRING)
+# "USE" (ident | string)
 def funcUSE(self, TokenType):
 	self.nextToken()
 
@@ -984,7 +1068,7 @@ def funcUSE(self, TokenType):
 	self.include(headerfile, False)
 	self.nextToken()
 
-# "EMITC" (IDENT | STRING)
+# "EMITC" (ident | string)
 def funcEMITC(self, TokenType):
 	self.nextToken()
 	self.used_experimental = True
@@ -995,14 +1079,14 @@ def funcEMITC(self, TokenType):
 		self.abort('EmitC: EmitC only takes a string, not \"'+self.curToken.text+"\"", self.curToken.line)
 	self.nextToken()
 
-# "INCLC" STRING
+# "INCLC" string
 def funcINCLC(self, TokenType):
 	self.nextToken()
 	self.include(self.curToken.text, False)
 	self.match(TokenType.STRING)
 	self.used_experimental = True
 
-# "RAISE" STRING [NUMBER]
+# "RAISE" string [number]
 def funcRAISE(self, TokenType):
 	self.nextToken()
 	self.emitter.emit('printf("\\033[1;31m')
@@ -1013,6 +1097,155 @@ def funcRAISE(self, TokenType):
 		self.emitter.emit('exit(')
 		self.emitter.emit(self.curToken.text)
 		self.emitter.emitLine(');')
+		self.match(TokenType.NUMBER)
+		self.nextToken()
+	elif self.checkToken(TokenType.IDENT):
+		if not self.checkVar(self.curToken.text, TokenType.NUMBER):
+			self.abort('Raise: Exit code can only be a number or a variable containing a number', self.curToken.line)
+		self.emitter.emit('exit(')
+		self.emitter.emit(self.getVarStr(self.curToken.text))
+		self.emitter.emitLine(');')
+		self.match(TokenType.IDENT)
 		self.nextToken()
 	else:
 		self.emitter.emitLine('exit(1);')
+
+# "CLASS" ident "Has" [hint ident ["COMMA"]]+ "DOES" [function]+ "ENDCLASS"
+def funcCLASS(self, TokenType):
+	self.nextToken()
+	classname = self.curToken.text
+	classdict = {"fields": {}, "methods": {}}
+	self.match(TokenType.IDENT)
+
+	hasfields = False
+	hasmethods = False
+
+	self.downScope()
+
+	if self.checkToken(TokenType.HAS):
+		# has args
+		hasfields = True
+		self.nextToken()
+		if self.checkToken(TokenType.NEWLINE):
+			self.nl()
+
+		while not self.checkToken(TokenType.DOES):
+
+			# expect "{HINT} IDENT, " etc..
+
+			if self.checkToken(TokenType.DOES):
+				break
+
+			self.match(TokenType.HINT, False)
+			vartoken = self.curToken
+			vartext = self.curToken.text
+
+			if "optional" in self.curToken.text:
+				self.abort("Class: Optional fields are not allowed")
+
+			isconstant = False
+			if "constant " in self.curToken.text:
+				isconstant = True
+				vartext = vartext.replace('constant ', '')
+
+			if vartext == "number":
+				vartype = TokenType.NUMBER
+			elif vartext == "string":
+				vartype = TokenType.STRING
+			elif vartext == "bool":
+				vartype = TokenType.BOOL
+			self.nextToken()
+			self.match(TokenType.IDENT, False)
+
+			# self.emitter.emit(vartoken.hintprops.emittext + " " + self.curToken.text)
+			varprops = VarProperties(vartype, isconstant)
+			classdict["fields"][self.curToken.text] = varprops
+
+			if self.checkVar(self.curToken.text):
+				self.abort("Class: Variable \""+self.curToken.text+'" already exists',self.curToken.line)
+			# self.addVar(self.curToken.text, vartype, isconstant)
+
+			# curtok here: ident
+			self.nextToken()
+
+			# expect DOES (after newline if indented) or COMMA
+			if self.checkToken(TokenType.COMMA):
+				self.nextToken()
+
+				if self.checkToken(TokenType.NEWLINE):
+					self.nl()
+
+				self.match(TokenType.HINT, False)
+			else:
+				if self.checkToken(TokenType.NEWLINE):
+					self.nl()
+				if self.checkToken(TokenType.ENDCLASS):
+					break
+				else:
+					self.match(TokenType.DOES, False)
+					break
+
+		self.classesDeclared[classname] = classdict
+
+	# if self.checkToken(TokenType.NEWLINE):
+	# 	self.nl()
+
+	if self.checkToken(TokenType.ENDCLASS):
+		self.match(TokenType.ENDCLASS)
+		return
+
+	self.match(TokenType.DOES)
+	self.nl()
+
+	while not self.checkToken(TokenType.ENDCLASS):
+		self.match(TokenType.METH, False)
+		# methodcode = funcFUNCTION(self, TokenType, inclass=True, classname=classname, classdict=classdict)
+		funcFUNCTION(self, TokenType, inclass=True, classname=classname, classdict=classdict)
+		# print(methodcode)
+		# self.emitter.emitLine(methodcode)
+		if self.checkToken(TokenType.NEWLINE):
+			self.nl()
+
+	self.match(TokenType.ENDCLASS)
+	self.upScope()
+
+# "INSTAN" ident "OF" ident
+def funcINSTAN(self, TokenType):
+	self.nextToken()
+
+	instname = self.curToken.text
+	self.match(TokenType.IDENT)
+	if self.checkVar(instname):
+		self.abort(f'Instance: Variable "{instname}" already exists', self.curToken.line)
+
+	self.match(TokenType.OF)
+
+	classname = self.curToken.text
+	self.match(TokenType.IDENT)
+	if not classname in self.classesDeclared:
+		self.abort(f'Instance: Cannot make an instance of undeclared class "{classname}"', self.curToken.line)
+
+	formatstr = instname + '___INSTANCEOF_' + classname + '_CLASS___'
+	# classdict = self.classesDeclared[classname]
+	fielddict = self.classesDeclared[classname]["fields"]
+
+	# emit fields
+	for field in fielddict:
+		# self.emitter.
+		vartype = fielddict[field].type
+		if vartype == TokenType.STRING:
+			self.emitter.emitLine('char *'+formatstr+field+';')
+		elif vartype == TokenType.BOOL:
+			self.emitter.emitLine('bool '+formatstr+field+';')
+		elif vartype == TokenType.NUMBER:
+			self.emitter.emitLine('float '+formatstr+field+';')
+		self.addVar(instname + "'s " + field, vartype, \
+			not fielddict[field].mutable, True, classname)
+
+	methoddict = self.classesDeclared[classname]["methods"]
+	for method in methoddict:
+		self.functionsDeclared[\
+		instname + "'s " + method\
+		] = methoddict[method]["props"]
+
+	print(list(self.functionsDeclared))
