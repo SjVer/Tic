@@ -10,18 +10,18 @@ Does
 
 	Declare {string} buffer
 
-	EmitC "FILE *USR_f = fopen(USR_path, \"r\");"
+	EmitC "FILE *$VARPREFIX$f = fopen($VARPREFIX$path, \"r\");"
 	EmitC "if (errno) {"
-	EmitC "perror(USR_path);"
+	EmitC "perror($VARPREFIX$path);"
 	Raise "File could not be read"
 	EmitC "}"
-	EmitC "fseek(USR_f, 0, SEEK_END);"
-	EmitC "long USR_length = ftell(USR_f);"
-	EmitC "fseek(USR_f, 0, SEEK_SET);"
-	EmitC "/* char * */USR_buffer = (char *) malloc(USR_length + 1);"
-	EmitC "USR_buffer[USR_length] = '\\0';"
-	EmitC "fread(USR_buffer, 1, USR_length, USR_f);"
-	EmitC "fclose(USR_f);"
+	EmitC "fseek($VARPREFIX$f, 0, SEEK_END);"
+	EmitC "long $VARPREFIX$length = ftell($VARPREFIX$f);"
+	EmitC "fseek($VARPREFIX$f, 0, SEEK_SET);"
+	EmitC "/* char * */$VARPREFIX$buffer = (char *) malloc($VARPREFIX$length + 1);"
+	EmitC "$VARPREFIX$buffer[$VARPREFIX$length] = '\\0';"
+	EmitC "fread($VARPREFIX$buffer, 1, $VARPREFIX$length, $VARPREFIX$f);"
+	EmitC "fclose($VARPREFIX$f);"
 EndFunction Returning buffer
 
 Function writefile Takes
@@ -33,14 +33,14 @@ Does
 	InclC "stdlib.h"
 	InclC "errno.h"
 
-	EmitC "FILE *USR_f;"
-	EmitC "USR_f = fopen(USR_path, \"w+\");"
-	EmitC "if (USR_f) {"
-	EmitC "fputs(USR_contents, USR_f); }"
+	EmitC "FILE *$VARPREFIX$f;"
+	EmitC "$VARPREFIX$f = fopen($VARPREFIX$path, \"w+\");"
+	EmitC "if ($VARPREFIX$f) {"
+	EmitC "fputs($VARPREFIX$contents, $VARPREFIX$f); }"
 	EmitC "else {"
 	Raise "File could not be written"
 	EmitC "}"
-	EmitC "fclose(USR_f);"
+	EmitC "fclose($VARPREFIX$f);"
 EndFunction
 
 Function createfile Takes
@@ -49,9 +49,9 @@ Does
 	# creates a file
 	InclC "stdio.h"
 
-	EmitC "FILE *USR_f;"
-	EmitC "fopen(USR_path, \"w\");"
-	#EmitC "fclose(USR_f);"
+	EmitC "FILE *$VARPREFIX$f;"
+	EmitC "fopen($VARPREFIX$path, \"w\");"
+	#EmitC "fclose($VARPREFIX$f);"
 EndFunction
 
 Function removefile Takes
@@ -60,9 +60,9 @@ Does
 	# removes a file
 	InclC "stdio.h"
 
-	EmitC "int USR_ret;"
-	EmitC "USR_ret = remove(USR_path);"
-	EmitC "if (USR_ret) {"
+	EmitC "int $VARPREFIX$ret;"
+	EmitC "$VARPREFIX$ret = remove($VARPREFIX$path);"
+	EmitC "if ($VARPREFIX$ret) {"
 	Raise "Could not remove file"
 	EmitC "}"
 EndFunction
@@ -76,8 +76,8 @@ Does
 
 	Declare {bool} exists
 
-	EmitC "if( access(USR_path, F_OK ) == 0 ) {"
-	EmitC "USR_exists = true;"
+	EmitC "if( access($VARPREFIX$path, F_OK ) == 0 ) {"
+	EmitC "$VARPREFIX$exists = true;"
 	EmitC "}else{"
-	EmitC "USR_exists = false;}"
+	EmitC "$VARPREFIX$exists = false;}"
 EndFunction Returning exists

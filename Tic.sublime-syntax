@@ -94,6 +94,9 @@ contexts:
     - match: 'EndClass'
       scope: entity.other.inherited-class
 
+    # - match: 'EndMethod'
+      # scope: entity.other.inherited-class
+
     - match: 'Use'
       scope: variable.function
       set: use_name
@@ -109,7 +112,8 @@ contexts:
 
     - match: 'Return'
       scope: entity.other.inherited-class
-      set: return
+      push: return
+      # set: return
 
     - match: '\b(Label|GoTo)\b'
       scope: keyword
@@ -129,20 +133,18 @@ contexts:
       set: function_code
     - match: 'Takes'
       scope: entity.other.inherited-class
-      set: function_params
-
-  function_params:
-    - meta_include_prototype: false
-    - include: includes
-    - match: 'Does'
-      scope: entity.other.inherited-class
-      # pop: true
-      set: function_code
+      set:
+        - meta_include_prototype: false
+        - include: includes
+        - match: 'Does'
+          scope: entity.other.inherited-class
+          # pop: true
+          set: function_code
 
   function_code:
     - include: includes
-    - match: 'self'
-      scope: variable.parameter
+    # - match: 'self'
+      # scope: variable.parameter
       # scope: keyword
     - match: 'EndFunction'
       scope: entity.other.inherited-class
@@ -182,17 +184,63 @@ contexts:
 
   class_code:
     - include: includes
-    - match: 'Function'
+    - match: 'Method'
       scope: entity.other.inherited-class
-      set: function_name
+      set: method_name
 
     - match: 'EndClass'
       scope: entity.other.inherited-class
       pop: true
 
+  method_name:
+    - meta_include_prototype: false
+    # - meta_scope: entity.other.inherited-class
+    - meta_scope: variable.function
+    - match: ' '
+      scope: entity.other.inherited-class
+    - match: 'Does'
+      scope: entity.other.inherited-class
+      set: method_code
+    - match: 'Takes'
+      scope: entity.other.inherited-class
+      set:
+        - meta_include_prototype: false
+        - include: includes
+        - match: 'Does'
+          scope: entity.other.inherited-class
+          # pop: true
+          set: method_code
+
+  method_code:
+    - include: includes
+    - match: 'self'
+      scope: variable.parameter
+      # scope: keyword
+    - match: 'EndMethod'
+      scope: entity.other.inherited-class
+      # pop: true
+      set:
+        - match: 'Returning'
+          scope: entity.other.inherited-class
+          # pop: true
+          # set: class_code
+          set:
+            - include: includes
+            - match: 'self'
+              scope: variable.parameter
+            - match: \S
+              set: class_code
+        - match: $\n?
+          set: class_code
+          # pop: true
+        - match: \S
+          set: class_code
+          # pop: true
+
   keywords:
     - match: '\b(If|Then|Else|ElseIf|EndIf|
-      |For|Do|EndFor|While|Repeat|EndWhile|Or|And)\b'
+      |For|Do|EndFor|While|Repeat|EndWhile|Or|And|
+      |SwitchFor|InCase|Otherwise|EndSwitch)\b'
       scope: keyword.control.example-c
 
   numbers:
@@ -242,21 +290,20 @@ contexts:
     - meta_include_prototype: false
     - meta_scope: variable.function
     # - meta_scope: entity.other.attribute-name
+    - match: "'s "
+      scope: keyword.operator.c
     - match: 'With'
       # scope: entity.other.attribute-name
       scope: entity.other.inherited-class
-      set: returnTo
+      set:
+        - include: includes
+        # - meta_include_prototype: false
+        - match: 'To'
+          scope: entity.other.inherited-class
+          pop: true
     - match: 'To'
       scope: entity.other.inherited-class
       # scope: entity.other.attribute-name
-      pop: true
-
-  returnTo:
-    - include: includes
-    - meta_include_prototype: false
-    # - meta_scope: variable.function
-    - match: 'To'
-      scope: entity.other.inherited-class
       pop: true
 
   label:

@@ -127,6 +127,10 @@ class TokenType(enum.Enum):
     ENDCLASS= TokenTypeItem(Types.KEYWORD, 'EndClass')
     INSTAN  = TokenTypeItem(Types.KEYWORD, 'Instance',  func=funcINSTAN)
     OF      = TokenTypeItem(Types.KEYWORD, 'Of')
+    SWITCH  = TokenTypeItem(Types.KEYWORD, 'SwitchFor', func=funcSWITCH)
+    INCASE  = TokenTypeItem(Types.KEYWORD, 'InCase')
+    OTHERW  = TokenTypeItem(Types.KEYWORD, 'Otherwise')
+    ENDSWI  = TokenTypeItem(Types.KEYWORD, 'EndSwitch')
     # Operators
     EQ      = TokenTypeItem(Types.OPERATOR)
     PLUS    = TokenTypeItem(Types.OPERATOR)

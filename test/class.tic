@@ -1,7 +1,9 @@
+Use math
+
 # an example of a class
-Class myclass Has
+Class Person Has
 	# fields go here
-	{string} name,
+	{string} name = "unnamed",
 	{number} age
 Does
 	# methods go here
@@ -12,18 +14,45 @@ Does
 		Print self's age
 		Print " years old.\n"
 	EndMethod
+
+	Method repeat Takes
+		{string} sentence,
+		{number} times
+	Does
+		# check if times is an integer
+		Declare {number} intvar
+		Return round With times, 0 To intvar
+
+		If times != intvar Then
+			Raise "Amount of times to repeat should be an integer!"
+		EndIf
+
+		For i, 1, times, 1 Do
+			Print "\""
+			Print sentence
+			PrintLine "\""
+		EndFor
+	EndMethod
 EndClass
 
-Instance myinstance Of myclass
+# create and use an instance
+Instance person Of Person
+Call person's talk
 
 Print "Enter your person's name: "
-Input myinstance's name
+Input person's name
 Print "Enter "
-Print myinstance's name
+Print person's name
 Print "'s age: "
-Input myinstance's age
+Input person's age
 
-Call myinstance's talk
+Call person's talk
 
+Declare {string} sentence
+Print "\nEnter a sentence to repeat: "
+Input sentence
+Declare {number} times
+Print "Enter how many times to repeat: "
+Input times
 
-
+Call person's repeat With sentence, times

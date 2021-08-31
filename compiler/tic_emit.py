@@ -1,4 +1,4 @@
-import os, subprocess
+import os, subprocess, re
 from termcolor import colored
 
 # Emitter object keeps track of the generated code and outputs it.
@@ -141,8 +141,21 @@ class Emitter:
 			code += "\n\n"+self.header
 			code += "\n\n"+self.functions
 			code += "\n\n#endif"
-			# sys.exit(1)
-		# print(code)
+
+
+		# replace initialization of float without value to float ...=0;
+		# otherwise it'll be 0.000000000000000000000000
+		regex = r"float [a-zA-z]+;"
+		results = re.findall(regex, code)
+		for result in results:
+			code = code.replace(result, result.replace(';', '=0;'))
+		
+		# do the same for strings so they don't appear as "(null)"
+		regex = r"char \*[ ]*[a-zA-z]+;"
+		results = re.findall(regex, code)
+		for result in results:
+			code = code.replace(result, result.replace(';', '=\"\";'))
+
 
 		if not self.keep_c_file:
 			self.tempfile.write(code)

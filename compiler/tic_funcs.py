@@ -1,15 +1,15 @@
 from tic_lex import *
 import random, string, tempfile, sys, os
 from termcolor import colored
-# from tic_imports import FuncPropterties, VarProperties
-# from tokens import DataTypes
+from tic_configs import configs
 
 class VarProperties:
-	def __init__(self, vartype, mutable: bool, isfield=False, classname=False):
+	def __init__(self, vartype, mutable: bool, isfield=False, classname=False, fielddefault=False):
 		self.type = vartype
 		# self.emittext = emittext
 		self.isfield = isfield
 		self.classname = classname
+		self.fielddefault = fielddefault
 		self.mutable: bool = mutable
 
 class FuncPropterties:
@@ -269,10 +269,10 @@ def funcDECLARE(self, TokenType):
 		self.nextToken()
 
 	varname = self.curToken.text
-	if "'s " in varname:
+	if configs.field_accessor in varname:
 		self.abort("Declare: Cannot declare fields of an instance", self.curToken.line)
 	##  self.emitter.emit(varname)
-	templine += 'USR_' + varname
+	templine += configs.variable_prefix + varname
 	self.match(TokenType.IDENT, False)
 
 	if not ishinted or isconstant:
@@ -377,11 +377,20 @@ def funcINPUT(self, TokenType):
 		self.emitter.emitLine("scanf(\"%" + "f\", &" + varstr + ");")
 
 	elif vartype == TokenType.STRING:
+		self.include("string.h", True)
 		tempstr = randStr(10)
-		self.emitter.emitLine("char "+tempstr+"[1000];")
-		self.emitter.emitLine("scanf(\"%" + f"s\", &{tempstr});")
-		self.emitter.emitLine(varstr+"="+tempstr+";")
-		# self.emitter.emitLine("scanf(\"%" + "s\", " + varname + ");")
+		# put it in a seperate scope for memory-friendlyness
+		self.emitter.emitLine("if (true) { char "+tempstr+"[1000];")
+		# self.emitter.emitLine("scanf(\"%" + f"s\", &{tempstr});")
+		# self.emitter.emitLine("scanf(\"%" + f"[^\\n]s\", &{tempstr});")
+		# self.emitter.emitLine('fgets('+tempstr+', 1000, stdin);')
+		self.emitter.emitLine('scanf("%[^\\n]%'+'*c", '+tempstr+');')
+
+		self.emitter.emitLine('printf("%'+'d\\n",'+tempstr+'[0]);')
+		self.emitter.emitLine('if('+tempstr+'[0]==\'\\0\'){printf("EMPTY");}')
+
+		self.emitter.emitLine(varstr+"="+tempstr+";}")
+		# self.emitter.emitLine("strcpy("+varstr+","+tempstr+");}")
 
 	elif vartype == TokenType.BOOL:
 		# declare and scan a temporary variable to catch the user input
@@ -480,9 +489,9 @@ def funcFOR(self, TokenType):
 		if i < 2:
 			self.match(TokenType.COMMA, False)
 			if i == 0:
-				self.emitter.emit('; USR_' + forvar + '<=')
+				self.emitter.emit('; '+ configs.variable_prefix + forvar + '<=')
 			else:
-				self.emitter.emit('; USR_' + forvar + '+=')
+				self.emitter.emit('; '+ configs.variable_prefix + forvar + '+=')
 		else:
 			self.match(TokenType.DO)
 			self.nl()
@@ -533,11 +542,16 @@ def funcFUNCTION(self, TokenType, inclass=False, classname=None, classdict=None)
 
 	if inclass:
 		for field in classdict['fields']:
-			self.addVar("self's " + field, classdict['fields'][field].type, \
+			self.addVar(configs.current_instance_variable + configs.field_accessor +\
+			 field, classdict['fields'][field].type, \
 				not classdict['fields'][field].mutable)
 		# self.emitter.startGetStr()
 
-	self.emitter.emit('VARGOHERE USR_' +(classname + "_METHOD_" if inclass else "") +self.curToken.text + '(')
+	if inclass:
+		formatstr = configs.method_format.format(classname, self.curToken.text)
+	else:
+		formatstr = configs.function_prefix + self.curToken.text
+	self.emitter.emit('VARGOHERE ' + formatstr + '(')
 	name = self.curToken.text
 
 	doesreturn = False
@@ -557,7 +571,7 @@ def funcFUNCTION(self, TokenType, inclass=False, classname=None, classdict=None)
 			elif vartype == TokenType.BOOL:
 				self.emitter.emit('bool ')
 
-			self.emitter.emit('CURRENTINSTANCEFIELD_'+field)
+			self.emitter.emit(configs.method_this_prefix+field)
 			if field != list(classdict['fields'])[-1]:
 				self.emitter.emit(',')
 
@@ -567,6 +581,9 @@ def funcFUNCTION(self, TokenType, inclass=False, classname=None, classdict=None)
 
 	self.nextToken()
 	if self.checkToken(TokenType.TAKES):
+
+		if inclass and classdict['fields'] != {}:
+			self.emitter.emit(',')
 
 		hasargs = True
 		optgiven = False
@@ -594,9 +611,7 @@ def funcFUNCTION(self, TokenType, inclass=False, classname=None, classdict=None)
 			self.nextToken()
 			self.match(TokenType.IDENT, False)
 
-			if inclass and classdict['fields'] != {}:
-				self.emitter.emit(',')
-			self.emitter.emit(vartoken.hintprops.emittext + " USR_" + self.curToken.text)
+			self.emitter.emit(vartoken.hintprops.emittext + " " + configs.variable_prefix + self.curToken.text)
 
 			# if optional param only optional params can follow
 			if optgiven and not vartoken.hintprops.opt:
@@ -683,18 +698,18 @@ def funcFUNCTION(self, TokenType, inclass=False, classname=None, classdict=None)
 	# print('replacing VARGOHERE USR_'+name + ' with '+ varstr + ' USR_'+name)
 	if self.generating_header:
 		self.emitter.functions = \
-			self.emitter.functions.replace('VARGOHERE USR_'+name, varstr + ' USR_'+name)
+			self.emitter.functions.replace('VARGOHERE ' + formatstr, varstr + ' ' + formatstr)
 	elif inclass:
 		self.emitter.code = \
-			self.emitter.code.replace('VARGOHERE USR_'+classname+'_METHOD_'+name,\
-				varstr + ' USR_'+classname+'_METHOD_'+name)
+			self.emitter.code.replace('VARGOHERE '+formatstr,\
+				varstr + ' ' + formatstr)
 
 	else:
 		self.emitter.code = \
-			self.emitter.code.replace('VARGOHERE USR_'+name, varstr + ' USR_'+name)
+			self.emitter.code.replace('VARGOHERE '+formatstr, varstr + ' ' + formatstr)
 
 	if doesreturn:
-		self.emitter.emitLine('return(USR_'+retvar+');')
+		self.emitter.emitLine('return('+self.getVarStr(retvar)+');')
 	self.emitter.emitLine('} // END OF FUNCTION '+name)
 
 	if inclass:
@@ -735,17 +750,20 @@ def funcCALL(self, TokenType, from_return=False):
 	funcname = self.curToken.text
 
 	if ismethod:
-		instname = funcname.split("'s ")[0]
+		instname = funcname.split(configs.field_accessor)[0]
 
-		self.emitter.emit("USR_"+classname+"_METHOD_"+self.curToken.text.split("'s ")[1]+'(')
+		# self.emitter.emit(configs.variable_prefix+classname+"_METHOD_"+self.curToken.text.split("'s ")[1]+'(')
+		self.emitter.emit(configs.method_format.format(classname, self.curToken.text.split(configs.field_accessor)[1])+'(')
+
 		for field in self.classesDeclared[classname]['fields']:
 			fielddict = self.classesDeclared[classname]['fields']
-			self.emitter.emit(instname + "___INSTANCEOF_"+classname+"_CLASS___"+field)
+			# self.emitter.emit(instname + "___INSTANCEOF_"+classname+"_CLASS___"+field)
+			self.emitter.emit(configs.instance_field_format.format(instname, classname, field))
 			if field != list(self.classesDeclared[classname]['fields'])[-1]:
 				self.emitter.emit(',')
 
 	else:
-		self.emitter.emit("USR_"+self.curToken.text + "(")
+		self.emitter.emit(configs.function_prefix+self.curToken.text + "(")
 	self.nextToken()
 
 	givenargs = 0
@@ -753,6 +771,8 @@ def funcCALL(self, TokenType, from_return=False):
 	# first generate the call of the wrapper but store information for the wrapper in the process
 	# if func needs args check for them
 	if argsamount > 0:
+		if ismethod and self.classesDeclared[classname]['fields'] != {}:
+			self.emitter.emit(',')
 
 		# atopts = False
 		nextisopt = False
@@ -880,7 +900,7 @@ def funcRETURN(self, TokenType):
 
 	self.match(TokenType.IDENT)
 
-	self.emitter.emitLine('USR_' + destvar + '=' + templine)
+	self.emitter.emitLine(configs.variable_prefix + destvar + '=' + templine)
 
 # "STARTW" hint ident, etc..
 def funcSTARTW(self, TokenType):
@@ -904,7 +924,7 @@ def funcSTARTW(self, TokenType):
 			vartype = TokenType.BOOL
 
 		self.match(TokenType.HINT)
-		self.emitter.emitMainArg('USR_'+self.curToken.text)
+		self.emitter.emitMainArg(configs.variable_prefix+self.curToken.text)
 		self.emitter.maincallargs.append(self.curToken.text)
 		# self.variablesDeclared[self.curToken.text] = vartype
 		self.addVar(self.curToken.text, vartype, True)
@@ -1074,7 +1094,9 @@ def funcEMITC(self, TokenType):
 	self.used_experimental = True
 	if self.checkToken(TokenType.STRING):
 		a = randStr(10)
-		self.emitter.emitLine(self.curToken.text.replace('\\\\', a).replace('\\', '').replace(a, '\\'))
+		self.emitter.emitLine(self.curToken.text.\
+			replace('\\\\', a).replace('\\', '').replace(a, '\\').\
+			replace('$VARPREFIX$', configs.variable_prefix))
 	else:
 		self.abort('EmitC: EmitC only takes a string, not \"'+self.curToken.text+"\"", self.curToken.line)
 	self.nextToken()
@@ -1158,8 +1180,9 @@ def funcCLASS(self, TokenType):
 			self.match(TokenType.IDENT, False)
 
 			# self.emitter.emit(vartoken.hintprops.emittext + " " + self.curToken.text)
+			varname = self.curToken.text
 			varprops = VarProperties(vartype, isconstant)
-			classdict["fields"][self.curToken.text] = varprops
+			classdict["fields"][varname] = varprops
 
 			if self.checkVar(self.curToken.text):
 				self.abort("Class: Variable \""+self.curToken.text+'" already exists',self.curToken.line)
@@ -1167,6 +1190,13 @@ def funcCLASS(self, TokenType):
 
 			# curtok here: ident
 			self.nextToken()
+			# curtok here: does or comma or eq with value
+
+			if self.checkToken(TokenType.EQ):
+				# default value
+				self.nextToken()
+				classdict["fields"][varname].fielddefault = self.curToken.text
+				self.match(vartype)
 
 			# expect DOES (after newline if indented) or COMMA
 			if self.checkToken(TokenType.COMMA):
@@ -1217,6 +1247,8 @@ def funcINSTAN(self, TokenType):
 	self.match(TokenType.IDENT)
 	if self.checkVar(instname):
 		self.abort(f'Instance: Variable "{instname}" already exists', self.curToken.line)
+	elif instname in self.instancesDeclared:
+		self.abort(f'Instance: Instance "{instname}" already exists', self.curToken.line)
 
 	self.match(TokenType.OF)
 
@@ -1225,7 +1257,7 @@ def funcINSTAN(self, TokenType):
 	if not classname in self.classesDeclared:
 		self.abort(f'Instance: Cannot make an instance of undeclared class "{classname}"', self.curToken.line)
 
-	formatstr = instname + '___INSTANCEOF_' + classname + '_CLASS___'
+	# formatstr = instname + '___INSTANCEOF_' + classname + '_CLASS___'
 	# classdict = self.classesDeclared[classname]
 	fielddict = self.classesDeclared[classname]["fields"]
 
@@ -1233,19 +1265,130 @@ def funcINSTAN(self, TokenType):
 	for field in fielddict:
 		# self.emitter.
 		vartype = fielddict[field].type
+		formatstr = configs.instance_field_format.format(instname, classname, field)
+
+		if fielddict[field].fielddefault:
+			formatstr += '=' + ('"' if vartype == TokenType.STRING else "") +\
+				fielddict[field].fielddefault + ('"' if vartype == TokenType.STRING else "")
+
 		if vartype == TokenType.STRING:
-			self.emitter.emitLine('char *'+formatstr+field+';')
+			self.emitter.emitLine('char *'+formatstr+';')
 		elif vartype == TokenType.BOOL:
-			self.emitter.emitLine('bool '+formatstr+field+';')
+			self.emitter.emitLine('bool '+formatstr+';')
 		elif vartype == TokenType.NUMBER:
-			self.emitter.emitLine('float '+formatstr+field+';')
-		self.addVar(instname + "'s " + field, vartype, \
+			self.emitter.emitLine('float '+formatstr+';')
+		self.addVar(instname + configs.field_accessor + field, vartype, \
 			not fielddict[field].mutable, True, classname)
 
 	methoddict = self.classesDeclared[classname]["methods"]
 	for method in methoddict:
 		self.functionsDeclared[\
-		instname + "'s " + method\
+		instname + configs.field_accessor + method\
 		] = methoddict[method]["props"]
 
-	print(list(self.functionsDeclared))
+	self.instancesDeclared.add(instname)
+
+# "SWITCH" (ident|number|string|bool) ("INCASE" (ident|number|string|bool) "DO")+ (OTHERW)
+def funcSWITCH(self, TokenType):
+	self.nextToken()
+
+	isvar = False
+	if self.checkToken(TokenType.NUMBER):
+		vartype = TokenType.NUMBER
+		varstr = self.curToken.text 
+
+	elif self.checkToken(TokenType.STRING):
+		vartype = TokenType.STRING
+		varstr = '"'+self.curToken.text+'"'
+
+	elif self.checkToken(TokenType.BOOL):
+		vartype = TokenType.BOOL
+		varstr = self.curToken.text
+
+	elif self.checkToken(TokenType.IDENT):
+		if not self.checkVar(self.curToken.text):
+			self.abort(f'SwitchFor: Variable "{self.curToken.text}" is not declared', self.curToken.line)
+		vartype = self.getVarType(self.curToken.text)
+		isvar = True
+		varstr = self.getVarStr(self.curToken.text)
+	
+	self.nextToken()
+	self.nl()
+
+	def handlecase(vartype, isvar=False):
+		self.emitter.emit('if(')
+
+		# vars are allowed but only of the correct type
+		if self.checkToken(TokenType.IDENT):
+			if not self.checkVar(self.curToken.text):
+				self.abort('Case: Undeclared variable "'+self.curToken.text+'"', self.curToken.line)
+			elif not self.checkVar(self.curToken.text, vartype):
+				self.abort(f'Case: Switch variable is of type {vartype.name} but variable "'+\
+					f'{self.curToken.text}" is of type {self.getVarType(self.curToken.text).name}', \
+					self.curToken.line)
+			casestr = self.getVarStr(self.curToken.text)
+			caseisvar = True
+			self.match(TokenType.IDENT, False)
+		else:
+			casestr = self.curToken.text
+			caseisvar = False
+			if vartype == TokenType.NUMBER:
+				if not self.atExpression():
+					self.match(vartype, False)
+			else: self.match(vartype, False)
+
+		if vartype == TokenType.STRING:
+			self.nextToken()
+			self.include("string.h", True)
+			if not caseisvar:
+				casestr = '"'+casestr+'"'
+			self.emitter.emitLine(f'strcmp({varstr}, {casestr})==0)'+'{')
+
+		elif vartype == TokenType.NUMBER:
+			self.emitter.emit(varstr+'==(')
+			self.expression()
+			self.emitter.emitLine(')){')
+
+		elif vartype == TokenType.BOOL:
+			self.nextToken()
+			self.emitter.emitLine(f'{varstr} == {casestr})'+'{')
+
+		# self.nextToken()
+
+	isfirst = True
+	while not self.checkToken(TokenType.ENDSWI):
+
+		if not isfirst:
+			self.emitter.emit('else ')
+
+		if self.checkToken(TokenType.NEWLINE):
+			self.nl()
+
+		# self.match(TokenType.INCASE)
+		if self.checkToken(TokenType.INCASE):
+			self.nextToken()
+			handlecase(vartype, isvar)
+			self.match(TokenType.DO)
+		
+		elif self.checkToken(TokenType.OTHERW):
+			self.nextToken()
+			self.emitter.emit('{')
+			self.nl()
+			while not self.checkToken(TokenType.ENDSWI):
+				self.statement()
+			self.match(TokenType.ENDSWI)
+			self.emitter.emit('}')
+			return
+
+		else:
+			self.abort(f'Switch: Expected "InCase", "OtherWise" or "EndSwitch", not "{self.curToken.text}"',
+				self.curToken.line)
+
+		self.nl()
+
+		while not self.checkToken(TokenType.INCASE, TokenType.OTHERW, TokenType.ENDSWI):
+			self.statement()
+		
+		self.emitter.emit('}')
+		isfirst = False
+		# while not self.checkToken(TokenType.)

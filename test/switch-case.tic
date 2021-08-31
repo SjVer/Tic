@@ -1,0 +1,43 @@
+# an example of the SwitchFor keyword
+Declare {number} value
+Print "Enter a number (1, 2, 3 or other): "
+Input value
+
+SwitchFor value
+	InCase 1 Do
+		PrintLine "1!"
+	InCase 2 Do
+		PrintLine "2!"
+	InCase 3 Do
+		PrintLine "3!"
+	Otherwise
+		PrintLine "other!"
+EndSwitch
+
+Declare {string} value2
+Print "Enter a string (\"hey\", \"test\", \"number\" or other): "
+Input value2
+
+SwitchFor value2
+	InCase "hey" Do
+		PrintLine "hey!"
+	InCase "test" Do
+		PrintLine "test!"
+	InCase "number" Do
+		PrintLine "number!"
+	Otherwise
+		PrintLine "other!"
+EndSwitch
+
+Declare {bool} value3
+Print "Enter a bool: "
+Input value3
+
+SwitchFor value3
+	InCase true Do
+		PrintLine "true!"
+	InCase false Do
+		PrintLine "false!"
+	Otherwise
+		PrintLine "other!"
+EndSwitch

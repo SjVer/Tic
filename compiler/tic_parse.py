@@ -1,6 +1,7 @@
 import sys, os
 from tic_lex import *
 from tic_tokens import Types
+from tic_configs import configs
 from copy import deepcopy
 from termcolor import colored
 from tic_funcs import VarProperties, FuncPropterties
@@ -28,6 +29,7 @@ class Parser:
 		self.labelsGotoed = set()   # Labels goto'ed so far.
 
 		self.functionsDeclared = {} # key is name and value is amount of args and their types
+		self.instancesDeclared = set()
 		self.classesDeclared = {}
 		# {
 		#	"name": {
@@ -60,9 +62,9 @@ class Parser:
 		self.prevToken = None
 		self.stmtToken = None
 
-		self.addVar('THIS_FILE', TokenType.STRING, True)
+		self.addVar(configs.current_file_var, TokenType.STRING, True)
 		if not self.generating_header:
-			self.emitter.includeLine('#define THIS_FILE "'+self.sourcefile+'"', True)
+			self.emitter.includeLine('#define '+configs.variable_prefix+configs.current_file_var+' "'+self.sourcefile+'"', True)
 		self.includes.add('stdio')
 		self.emitter.includes += '#include <stdio.h>\n'
 		self.nextToken(doprint=False)
@@ -137,12 +139,20 @@ class Parser:
 	def getVarStr(self, varname):
 		if not self.checkVar(varname):
 			return False
-		if "self's " in varname:
-			return varname.replace("self's ", 'CURRENTINSTANCEFIELD_')
-		if "'s " in varname:
+
+		elif configs.current_instance_variable+configs.field_accessor in varname:
+			return varname.replace(
+				configs.current_instance_variable+configs.field_accessor,
+				configs.method_this_prefix)
+
+		elif configs.field_accessor in varname:
 			classname = self.getVars()[varname].classname
-			return varname.replace("'s ", "___INSTANCEOF_" + classname + '_CLASS___')
-		return 'USR_'+varname
+			instname = varname.split(configs.field_accessor)[0]
+			var = varname.split(configs.field_accessor)[1]
+			return configs.instance_field_format.format(instname, classname, var)
+			# return varname.replace("'s ", "___INSTANCEOF_" + classname + '_CLASS___')
+		
+		return configs.variable_prefix+varname
 
 	# checks mutability of var
 	def checkVarMutability(self, varname):
